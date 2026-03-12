@@ -1,0 +1,15 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap");
+
+:root {
+  --dark-blue: #223f59;
+  --light-blue: #a0b1dd;
+  --off-white: #f0ede5;
+  --yellow: #d9b343;
+  --transition: 0.15s ease;
+}
+
+html {
+  font-family: "Nunito Sans", sans-serif;
+  font-size: 18px;
+}

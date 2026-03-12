@@ -1,0 +1,150 @@
+.container-footer {
+  background-color: var(--dark-blue);
+  color: var(--off-white);
+  font-family: "Nunito Sans", sans-serif;
+  font-size: 0.95rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+.site-footer {
+  width: 100%;
+  margin: 0 auto;
+  padding-top: 1rem;
+}
+.footer-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-center;
+  gap: 2rem;
+  flex-wrap: nowrap;
+}
+
+.footer-col {
+  flex: 1;
+  min-width: 180px;
+}
+
+.logo-col img {
+  width: 80%;
+  max-width: 300px;
+  height: auto;
+  display: block;
+}
+.social-col {
+  max-width: 400px;
+}
+
+.footer-col h4 {
+  color: inherit;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+}
+
+.footer-col .nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-link,
+.nav-info {
+  color: var(--off-white);
+  text-decoration: none;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+}
+
+.contact-list .nav-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.footer-col .nav.flex .nav-item {
+  margin-right: 0.75rem;
+}
+
+.footer-col .nav.flex .nav-item:last-child {
+  margin-right: 0;
+}
+.container-footer svg,
+.container-footer .react-icons {
+  color: var(--yellow);
+  width: 1.5rem;
+  height: 1.5rem;
+  vertical-align: middle;
+  display: inline-block;
+  transition:
+    color 180ms ease,
+    filter 180ms ease;
+}
+
+.footer-row .nav-link svg,
+.footer-col .react-icons {
+  width: 2rem;
+  height: 2rem;
+}
+
+.contact-list svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+}
+
+.contact-list svg * {
+  stroke-width: 1.8;
+}
+
+.footer-col .nav.flex .nav-link:hover svg {
+  color: var(--light-blue);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25));
+}
+.site-footer hr {
+  border: 0;
+  height: 1px;
+  background: var(--light-blue);
+  margin: 1rem 0;
+}
+
+.site-footer .copyright {
+  color: var(--light-blue);
+  margin: 0;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .footer-row {
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+
+  .logo-col,
+  .social-col {
+    flex: 0 0 calc(50% - 0.75rem);
+    min-width: 0;
+  }
+
+  .contact-col {
+    flex: 0 0 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-row {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .footer-col {
+    width: 100%;
+    min-width: auto;
+  }
+}

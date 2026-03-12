@@ -1,40 +1,39 @@
-import { useState, useEffect } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import { Routes, Route } from "react-router-dom";
 import "./App.css";
-import Header from "./components/Header/Header";
+import MainLayout from "./components/MainLayout/MainLayout";
+import Homepage from "./pages/public/Homepage/Homepage";
+import Course from "./pages/public/Courses/Course/Course";
+import Courses from "./pages/public/Courses/Courses/Courses";
+import Enrollment from "./pages/public/Enrollment/Enrollment/Enrollment";
+import Payment from "./pages/public/Payment/Payment/Payment";
+import Login from "./pages/auth/Login/Login";
+import Register from "./pages/auth/Register/Register";
+import FunFact from "./pages/public/FunFacts/FunFact/FunFact";
+import FunFacts from "./pages/public/FunFacts/FunFacts/FunFacts";
+import AdminDashboard from "./pages/Admin/AdminDashboard/AdminDashboard";
+import StudentDashboard from "./pages/Student/StudentDashboard/StudentDashboard";
+import CreateCourse from "./pages/Admin/CreateCourse/CreateCourse";
+import StudentDetails from "./pages/Student/StudentDetails/StudentDetails";
 
 function App() {
-  const [count, setCount] = useState(0);
-  const [data, setData] = useState(0);
-
-  useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/test")
-      .then((res) => res.json())
-      .then((data) => setData(data.data));
-  }, []);
-
   return (
-    <>
-      <div>
-        <Header></Header>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
-      <p>{data}</p>
-    </>
+    <Routes>
+      <Route element={<MainLayout />}>
+        <Route path="/" element={<Homepage />} />
+        <Route path="/course" element={<Course />} />
+        <Route path="/courses" element={<Courses />} />
+        <Route path="/enrollment" element={<Enrollment />} />
+        <Route path="/payment" element={<Payment />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/fun-fact" element={<FunFact />} />
+        <Route path="/fun-facts" element={<FunFacts />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/student-dashboard" element={<StudentDashboard />} />
+        <Route path="/create-course" element={<CreateCourse />} />
+        <Route path="/student-details" element={<StudentDetails />} />
+      </Route>
+    </Routes>
   );
 }
 
