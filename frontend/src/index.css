@@ -2,11 +2,21 @@
 @import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap");
 
 :root {
+  /* COLORS */
   --dark-blue: #223f59;
   --light-blue: #a0b1dd;
   --off-white: #f0ede5;
   --yellow: #d9b343;
+  --text-color: #162737;
+  /* EFFECTS */
   --transition: 0.15s ease;
+  --corner-radius: 10px;
+  --drop-shadow: drop-shadow(0.1rem 0.1rem 0.1rem #999);
+  /* SPACING */
+  --section-padding: 1rem 2rem 2rem 2rem;
+  /* SIZES */
+  --card-title-font-size: 1.3rem;
+  --card-text-font-size: 0.9rem;
 }
 
 html {

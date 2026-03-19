@@ -1,0 +1,29 @@
+.testimonial-card {
+  background-color: var(--off-white);
+  color: var(--text-color);
+  text-align: start;
+  border-radius: var(--corner-radius);
+  align-items: center;
+  padding: 1rem 1rem 0.5rem 1rem;
+  filter: var(--drop-shadow);
+}
+.testimonial-rating {
+  font-size: 1.2rem;
+  color: var(--yellow);
+  margin-bottom: 0.1rem;
+}
+.testimonial-comment {
+  margin-bottom: 0.3rem;
+}
+.testimonial-commenter-info {
+  display: flex;
+  justify-content: space-between;
+}
+.testimonial-name {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+.testimonial-date {
+  font-size: 0.9rem;
+  color: var(--light-blue);
+}
