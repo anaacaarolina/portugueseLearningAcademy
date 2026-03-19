@@ -1,3 +1,211 @@
 .register {
-  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background-color: var(--off-white);
+}
+
+.register-card {
+  width: 65%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background-color: white;
+  border-radius: 16px;
+  overflow: hidden;
+  filter: var(--drop-shadow);
+}
+
+.register-card__social-side,
+.register-card__form-side {
+  padding: 2.2rem;
+}
+
+.register-card__social-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.register-card__form-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.register-divider {
+  position: relative;
+  margin-bottom: 1.1rem;
+  text-align: center;
+  color: var(--text-color);
+  font-size: 0.85rem;
+}
+
+.register-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  border-top: 1px solid var(--yellow);
+  transform: translateY(-50%);
+}
+
+.register-divider span {
+  position: relative;
+  padding: 0 0.9rem;
+  background-color: #ffffff;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.register-form label {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.register-form input {
+  width: 100%;
+  padding: 0.58rem 0.7rem;
+  border: 1px solid var(--light-blue);
+  border-radius: 8px;
+  font-size: 0.92rem;
+  margin-bottom: 0.35rem;
+}
+
+.register-form input:focus {
+  outline: none;
+  border-color: var(--light-blue);
+  box-shadow: 0 0 0 3px rgba(160, 177, 221, 0.25);
+}
+
+.register-form__checkbox {
+  display: block;
+  position: relative;
+  padding-left: 2rem;
+  margin: 0.2rem 0 0.45rem;
+  font-size: 0.8rem;
+  color: var(--dark-blue);
+  cursor: pointer;
+  user-select: none;
+}
+
+.register-form__checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.register-form__checkmark {
+  position: absolute;
+  top: 0.02rem;
+  left: 0;
+  height: 1.3rem;
+  width: 1.3rem;
+  border: 2px solid var(--yellow);
+  border-radius: 5px;
+  background-color: white;
+  transition: var(--transition);
+}
+
+.register-form__checkbox:hover input ~ .register-form__checkmark {
+  background-color: white;
+}
+
+.register-form__checkbox input:focus-visible ~ .register-form__checkmark {
+  box-shadow: 0 0 0 3px var(--yellow);
+}
+
+.register-form__checkbox input:checked ~ .register-form__checkmark {
+  background-color: var(--yellow);
+  border-color: var(--yellow);
+}
+
+.register-form__checkmark::after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.register-form__checkbox input:checked ~ .register-form__checkmark::after {
+  display: block;
+}
+
+.register-form__checkbox .register-form__checkmark::after {
+  left: 0.45rem;
+  top: 0.2rem;
+  width: 0.3rem;
+  height: 0.6rem;
+  border: solid var(--dark-blue);
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+
+.register-form__checkbox-text {
+  font-size: 0.75rem;
+  display: inline-block;
+  line-height: 1.35;
+}
+
+.register-form__submit-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  background-color: var(--yellow);
+  color: var(--dark-blue);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.register-form__submit-btn:hover {
+  background-color: var(--light-blue);
+}
+
+.register-form__signin-text {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+  color: var(--dark-blue);
+}
+
+.register-form__signin-text a {
+  color: var(--yellow);
+  font-weight: bold;
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.register-form__signin-text a:hover {
+  color: var(--dark-blue);
+}
+
+@media (max-width: 900px) {
+  .register {
+    padding: 1.1rem;
+  }
+
+  .register-card {
+    grid-template-columns: 1fr;
+  }
+
+  .register-card__social-side,
+  .register-card__form-side {
+    padding: 1.4rem;
+  }
+
+  .register-card__form-side {
+    border-top: 1px solid #e5ebf1;
+  }
 }

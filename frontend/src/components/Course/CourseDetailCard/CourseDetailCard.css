@@ -1,0 +1,39 @@
+.course-detail-card {
+  background-color: white;
+  border-radius: var(--corner-radius);
+  padding: 1rem;
+  text-align: center;
+  filter: var(--drop-shadow);
+}
+
+.course-detail-card-icon-circle {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background-color: var(--light-blue);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.course-detail-card-icon {
+  color: var(--dark-blue);
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+
+.course-detail-card-title {
+  margin: 0 0 0.35rem;
+  color: var(--light-blue);
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.course-detail-card-text {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}

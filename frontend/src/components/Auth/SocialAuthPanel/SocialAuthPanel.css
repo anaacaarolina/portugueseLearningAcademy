@@ -1,0 +1,71 @@
+.social-auth-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.social-auth-panel__title {
+  margin: 0;
+  color: var(--dark-blue);
+  font-family: "Roboto Slab", serif;
+  font-size: 2rem;
+}
+
+.social-auth-panel__subtitle {
+  margin: 0;
+  color: var(--dark-blue);
+  font-size: 0.95rem;
+}
+
+.social-auth-panel__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 0.6rem;
+}
+
+.social-auth-panel__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--light-blue);
+  border-radius: 10px;
+  background-color: var(--off-white);
+  color: var(--text-color);
+  cursor: pointer;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.social-auth-panel__button:hover {
+  box-shadow: 0 8px 18px rgba(34, 63, 89, 0.12);
+  border-color: var(--light-blue);
+}
+
+.social-auth-panel__icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.social-auth-panel__icon svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.social-auth-panel__label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
