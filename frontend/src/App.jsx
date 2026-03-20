@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import MainLayout from "./components/MainLayout/MainLayout";
 import Homepage from "./pages/public/Homepage/Homepage";
@@ -15,25 +16,38 @@ import StudentDashboard from "./pages/Student/StudentDashboard/StudentDashboard"
 import CreateCourse from "./pages/Admin/CreateCourse/CreateCourse";
 import StudentDetails from "./pages/Student/StudentDetails/StudentDetails";
 
+function ScrollToTopOnRouteChange() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
+
+  return null;
+}
+
 function App() {
   return (
-    <Routes>
-      <Route element={<MainLayout />}>
-        <Route path="/" element={<Homepage />} />
-        <Route path="/course" element={<Course />} />
-        <Route path="/courses" element={<Courses />} />
-        <Route path="/enrollment" element={<Enrollment />} />
-        <Route path="/payment" element={<Payment />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/fun-fact" element={<FunFact />} />
-        <Route path="/fun-facts" element={<FunFacts />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/student-dashboard" element={<StudentDashboard />} />
-        <Route path="/create-course" element={<CreateCourse />} />
-        <Route path="/student-details" element={<StudentDetails />} />
-      </Route>
-    </Routes>
+    <>
+      <ScrollToTopOnRouteChange />
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Homepage />} />
+          <Route path="/course" element={<Course />} />
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/enrollment" element={<Enrollment />} />
+          <Route path="/payment" element={<Payment />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/fun-fact" element={<FunFact />} />
+          <Route path="/fun-facts" element={<FunFacts />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/student-dashboard" element={<StudentDashboard />} />
+          <Route path="/create-course" element={<CreateCourse />} />
+          <Route path="/student-details" element={<StudentDetails />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
 

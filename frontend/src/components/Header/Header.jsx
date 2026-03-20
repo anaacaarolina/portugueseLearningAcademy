@@ -47,7 +47,7 @@ export default function Header() {
                 <span>Login</span>
               </Link>
             </li>
-            <Link to="/enrollment" className="button nav-item-button" onClick={closeMenu}>
+            <Link to="/register" className="button nav-item-button" onClick={closeMenu}>
               Get Started
             </Link>
           </ul>
