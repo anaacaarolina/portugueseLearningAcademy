@@ -1,0 +1,79 @@
+.hour-package-card {
+  position: relative;
+  width: 100%;
+  border-radius: 15px;
+  background-color: var(--off-white);
+  border: 1px solid rgba(34, 63, 89, 0.15);
+  padding: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: filter var(--transition);
+}
+
+.hour-package-card:hover {
+  outline: 1px solid var(--light-blue);
+  filter: drop-shadow(0.1rem 0.1rem 0.4rem var(--light-blue));
+}
+.hour-package-card:focus {
+  outline: none;
+}
+.hour-package-card:focus-visible {
+  outline: 2px solid var(--yellow);
+}
+
+.hour-package-card--popular {
+  border-color: var(--yellow);
+  outline: 1px solid transparent;
+}
+
+.hour-package-card--selected {
+  border-color: var(--yellow);
+  box-shadow: 0 8px 20px rgba(185, 161, 6, 0.415);
+  outline: 1px solid transparent;
+}
+
+.hour-package-card__badge {
+  position: absolute;
+  top: -0.72rem;
+  right: 0.75rem;
+  background-color: var(--yellow);
+  color: var(--dark-blue);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.22rem 0.62rem;
+  border-radius: 999px;
+}
+.hour-package-card-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.hour-package-card-hours-price {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.hour-package-card__hours-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--dark-blue);
+}
+
+.hour-package-card__hours {
+  margin: 0;
+  font-weight: bold;
+}
+
+.hour-package-card__price {
+  font-size: 1.2rem;
+  margin: 0.5rem 0 0 0;
+  color: var(--dark-blue);
+  font-weight: bold;
+}
+
+.hour-package-card__per-hour {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 0.9rem;
+}

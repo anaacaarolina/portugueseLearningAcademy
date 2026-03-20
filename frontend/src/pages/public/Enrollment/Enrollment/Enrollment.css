@@ -1,3 +1,127 @@
-.enrollment {
-  padding: 2rem;
+.enrollment-page {
+  font-family: "Nunito Sans", sans-serif;
+  color: var(--text-color);
+}
+
+.enrollment-page section {
+  padding: var(--section-padding);
+}
+
+.enrollment-intro-section {
+  color: var(--off-white);
+  background-color: var(--dark-blue);
+  width: 100%;
+}
+
+.enrollment-title {
+  margin: 0 0 0.7rem 0;
+  font-size: 2rem;
+  font-family: "Roboto Slab", serif;
+}
+
+.enrollment-plan-section {
+  background-color: var(--off-white);
+  padding-top: 3rem !important;
+  padding-bottom: 3rem !important;
+}
+
+.enrollment-plan-card {
+  width: 90%;
+  margin: 0 auto;
+  background-color: white;
+  border-radius: 16px;
+  padding: 1.4rem;
+  filter: var(--drop-shadow);
+}
+
+.enrollment-plan-card h2 {
+  color: var(--dark-blue);
+  text-align: start;
+  font-family: "Roboto Slab", serif;
+}
+
+.enrollment-select-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.enrollment-select-label {
+  color: var(--text-color);
+  font-size: 1rem;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+.enrollment-select .react-select__control {
+  border-radius: var(--corner-radius);
+  background-color: var(--light-blue);
+  border: none;
+  box-shadow: none;
+  margin-bottom: 0.2rem;
+}
+
+.enrollment-select .react-select__menu {
+  padding: 0.5rem 0 0;
+  background-color: var(--light-blue);
+  border-radius: var(--corner-radius);
+}
+
+.enrollment-select .react-select__option {
+  background-color: var(--light-blue);
+  margin-bottom: 0.5rem;
+}
+
+.enrollment-select .react-select__option:hover,
+.enrollment-select .react-select__option--is-selected,
+.enrollment-select .react-select__option--is-focused {
+  background-color: var(--light-blue);
+  color: var(--off-white);
+}
+
+.enrollment-select .react-select__dropdown-indicator,
+.enrollment-select .react-select__dropdown-indicator:hover {
+  color: var(--text-color);
+}
+
+.enrollment-select .react-select__indicator-separator {
+  background-color: var(--light-blue);
+}
+
+.enrollment-hour-packages-grid {
+  margin-top: 1.15rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.enrollment-buy-button {
+  display: block;
+  margin: 1rem auto 0 auto;
+  width: 50%;
+  border: none;
+  border-radius: 10px;
+  padding: 0.7rem 1.3rem;
+  background-color: var(--yellow);
+  color: var(--dark-blue);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.enrollment-buy-button:hover {
+  background-color: var(--light-blue);
+}
+
+@media (min-width: 700px) {
+  .enrollment-hour-packages-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1050px) {
+  .enrollment-hour-packages-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

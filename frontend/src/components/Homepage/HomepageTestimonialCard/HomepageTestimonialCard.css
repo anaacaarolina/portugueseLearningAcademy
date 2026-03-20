@@ -6,6 +6,7 @@
   align-items: center;
   padding: 1rem 1rem 0.5rem 1rem;
   filter: var(--drop-shadow);
+  height: fit-content;
 }
 .testimonial-rating {
   font-size: 1.2rem;
