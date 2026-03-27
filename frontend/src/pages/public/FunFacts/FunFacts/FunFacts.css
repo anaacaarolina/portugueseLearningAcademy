@@ -1,3 +1,92 @@
-.fun-facts {
-  padding: 2rem;
+.fun-facts-page {
+  font-family: "Nunito Sans", sans-serif;
+  color: var(--text-color);
+}
+
+.fun-facts-page section {
+  padding: var(--section-padding);
+}
+
+.fun-facts-hero-section {
+  background-color: var(--dark-blue);
+  color: var(--off-white);
+}
+
+.fun-facts-hero-section h1 {
+  margin: 0.5rem 0;
+  font-family: "Roboto Slab", serif;
+  font-size: 2rem;
+}
+
+.fun-facts-hero-section p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.fun-facts-filter-section {
+  background-color: white;
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  padding-bottom: 1rem !important;
+}
+
+.fun-facts-filter-button {
+  border: 0;
+  border-radius: 10px;
+  padding: 0.42rem 0.85rem;
+  font-weight: 700;
+  font-family: "Nunito Sans", sans-serif;
+  color: var(--dark-blue);
+  background-color: var(--off-white);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.fun-facts-filter-button:hover {
+  background-color: var(--light-blue);
+  color: var(--dark-blue);
+}
+
+.fun-facts-filter-button.is-active {
+  background-color: var(--yellow);
+  color: var(--dark-blue);
+}
+
+.fun-facts-catalog-section {
+  background-color: var(--off-white);
+}
+
+.fun-facts-catalog-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+.fun-facts-empty-state {
+  padding-top: 0 !important;
+  text-align: center;
+  min-height: 2rem;
+  background-color: var(--off-white);
+}
+
+.fun-facts-empty-state p {
+  margin: 0;
+  color: var(--dark-blue);
+}
+
+@media (min-width: 700px) {
+  .fun-facts-catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .fun-facts-catalog-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fun-facts-hero-section h1 {
+    font-size: 2.5rem;
+  }
 }

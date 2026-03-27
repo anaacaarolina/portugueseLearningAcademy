@@ -64,7 +64,9 @@ export default function Register() {
             <label className="register-form__checkbox" htmlFor="register-terms">
               <input id="register-terms" name="terms" type="checkbox" required />
               <span className="register-form__checkmark" aria-hidden="true"></span>
-              <span className="register-form__checkbox-text">I agree to the terms and conditions and privacy policy</span>
+              <p className="register-form__checkbox-text">
+                I agree to the <a className="register-form__checkbox-text-link">terms and conditions</a> and <a className="register-form__checkbox-text-link">privacy policy</a>
+              </p>
             </label>
 
             <button type="submit" className="register-form__submit-btn">

@@ -42,6 +42,11 @@ export default function Header() {
               </Link>
             </li>
             <li className="nav-item">
+              <Link to="/admin-dashboard" className="nav-link" onClick={closeMenu}>
+                Admin
+              </Link>
+            </li>
+            <li className="nav-item">
               <Link to="/login" className="nav-link" onClick={closeMenu}>
                 <User className="nav-icon" size="1em" aria-hidden="true" />
                 <span>Login</span>
