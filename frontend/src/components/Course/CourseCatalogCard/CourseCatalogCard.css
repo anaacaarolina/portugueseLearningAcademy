@@ -1,0 +1,74 @@
+.course-catalog-card {
+  border-radius: var(--corner-radius);
+  overflow: hidden;
+  background-color: #fff;
+  border: 1px solid rgba(34, 63, 89, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  filter: var(--drop-shadow);
+}
+
+.course-catalog-card-header {
+  background-color: var(--dark-blue);
+  color: var(--off-white);
+  padding: 1rem;
+}
+
+.course-catalog-card-header h3 {
+  margin: 0;
+  font-family: "Roboto Slab", serif;
+  font-size: 1.15rem;
+}
+
+.course-catalog-card-level {
+  display: inline-block;
+  margin: 0 0 0.65rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background-color: var(--yellow);
+  color: var(--dark-blue);
+  font-weight: 800;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.course-catalog-card-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.course-catalog-card-description {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.course-catalog-card-meta-list {
+  margin: 1rem 0 1.1rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.course-catalog-card-meta-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--dark-blue);
+  font-size: 0.9rem;
+}
+
+.course-catalog-card-meta-list li svg {
+  color: var(--light-blue);
+  flex-shrink: 0;
+}
+
+.course-catalog-card-button {
+  margin-top: auto;
+  align-self: flex-start;
+  text-align: center;
+  width: 100%;
+}

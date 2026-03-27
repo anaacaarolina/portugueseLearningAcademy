@@ -1,0 +1,66 @@
+.fun-fact-catalog-card {
+  border-radius: var(--corner-radius);
+  overflow: hidden;
+  background-color: #fff;
+  border: 1px solid rgba(34, 63, 89, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  filter: var(--drop-shadow);
+}
+
+.fun-fact-catalog-card-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: center;
+  max-height: 150px;
+}
+
+.fun-fact-catalog-card-content {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.fun-fact-catalog-card-category {
+  display: inline-block;
+  align-self: flex-start;
+  margin: 0;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background-color: var(--yellow);
+  color: var(--dark-blue);
+  font-weight: 800;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.fun-fact-catalog-card-content h3 {
+  margin: 0.7rem 0 0.6rem;
+  color: var(--dark-blue);
+  font-family: "Roboto Slab", serif;
+  font-size: 1.1rem;
+}
+
+.fun-fact-catalog-card-excerpt {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.fun-fact-catalog-card-read-more {
+  margin-top: auto;
+  padding-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--yellow);
+  text-decoration: none;
+  font-weight: 800;
+  transition: color var(--transition);
+}
+
+.fun-fact-catalog-card-read-more:hover {
+  color: var(--dark-blue);
+}

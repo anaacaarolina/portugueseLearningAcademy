@@ -1,0 +1,112 @@
+.admin-students-section {
+  background-color: #fff;
+  border: 1px solid rgba(34, 63, 89, 0.1);
+  border-radius: var(--corner-radius);
+  padding: 1rem;
+}
+
+.admin-students-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.admin-students-header h2 {
+  margin: 0;
+  color: var(--dark-blue);
+  font-family: "Roboto Slab", serif;
+}
+
+.admin-students-count-pill {
+  margin: 0;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  background-color: var(--yellow);
+  color: var(--dark-blue);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.admin-students-table-wrapper {
+  overflow-x: auto;
+}
+
+.admin-students-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 920px;
+}
+
+.admin-students-table th,
+.admin-students-table td {
+  border-bottom: 1px solid rgba(34, 63, 89, 0.08);
+  padding: 0.8rem 0.6rem;
+  text-align: left;
+  font-size: 0.86rem;
+}
+
+.admin-students-table th {
+  color: var(--dark-blue);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.admin-student-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-student-avatar {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--light-blue);
+  color: var(--dark-blue);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.admin-student-status-pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.22rem 0.58rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.admin-student-status-pill.status-active {
+  background-color: var(--status-active-bg);
+  color: var(--status-active-color);
+}
+
+.admin-student-status-pill.status-pending {
+  background-color: var(--status-pending-bg);
+  color: var(--status-pending-color);
+}
+
+.admin-student-status-pill.status-completed {
+  background-color: var(--status-completed-bg);
+  color: var(--status-completed-color);
+}
+.admin-student-status-pill.status-canceled {
+  background-color: var(--status-canceled-bg);
+  color: var(--status-canceled-color);
+}
+
+.admin-student-action-link {
+  color: var(--yellow);
+  text-decoration: none;
+  font-weight: 700;
+  transition: var(--transition);
+}
+
+.admin-student-action-link:hover {
+  color: var(--dark-blue);
+}

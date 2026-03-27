@@ -8,6 +8,15 @@
   --off-white: #f0ede5;
   --yellow: #d9b343;
   --text-color: #162737;
+  --status-active-bg: #d8f5e3;
+  --status-active-color: #0f5c2e;
+  --status-pending-bg: #fff0cc;
+  --status-pending-color: #8c6400;
+  --status-completed-bg: #e4e8ff;
+  --status-completed-color: #2f3e8c;
+  --status-canceled-bg: #f5d8d8;
+  --status-canceled-color: #5c0f0f;
+
   /* EFFECTS */
   --transition: 0.15s ease;
   --corner-radius: 10px;

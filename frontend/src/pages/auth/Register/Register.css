@@ -186,6 +186,17 @@
   line-height: 1.35;
   font-family: "Nunito Sans", sans-serif;
 }
+.register-form__checkbox-text-link {
+  font-size: 0.75rem;
+  display: inline-block;
+  line-height: 1.35;
+  font-family: "Nunito Sans", sans-serif;
+  color: var(--yellow);
+  transition: var(--transition);
+}
+.register-form__checkbox-text-link:hover {
+  color: var(--dark-blue);
+}
 
 .register-form__submit-btn {
   border: none;

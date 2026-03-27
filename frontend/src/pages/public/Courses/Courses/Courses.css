@@ -1,3 +1,132 @@
-.courses {
-  padding: 2rem;
+.courses-page {
+  font-family: "Nunito Sans", sans-serif;
+  color: var(--text-color);
+}
+
+.courses-page section {
+  padding: var(--section-padding);
+}
+
+.courses-hero-section {
+  background-color: var(--dark-blue);
+  color: var(--off-white);
+}
+
+.courses-subtitle {
+  margin: 0.5rem 0;
+  color: var(--yellow);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.courses-hero-section h1 {
+  margin: 0.5rem 0;
+  font-family: "Roboto Slab", serif;
+  font-size: 2rem;
+}
+
+.courses-hero-section p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.courses-filter-section {
+  background-color: var(--off-white);
+  display: grid;
+  gap: 1rem;
+}
+
+.courses-filter-field {
+  width: 100%;
+}
+
+.courses-filter-field label {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--dark-blue);
+  font-weight: 700;
+}
+
+.courses-filter-select .react-select__control {
+  border-radius: var(--corner-radius);
+  border: none;
+  background-color: var(--light-blue);
+  box-shadow: none;
+}
+
+.courses-filter-select .react-select__menu {
+  background-color: var(--light-blue);
+  border-radius: var(--corner-radius);
+  overflow: hidden;
+}
+
+.courses-filter-select .react-select__option {
+  background-color: var(--light-blue);
+}
+
+.courses-filter-select .react-select__option--is-selected,
+.courses-filter-select .react-select__option--is-focused,
+.courses-filter-select .react-select__option:hover {
+  background-color: var(--light-blue);
+  color: var(--off-white);
+}
+
+.courses-filter-select .react-select__dropdown-indicator,
+.courses-filter-select .react-select__dropdown-indicator:hover {
+  color: var(--text-color);
+}
+
+.courses-filter-select .react-select__indicator-separator {
+  background-color: transparent;
+}
+
+.courses-catalog-section {
+  background-color: var(--off-white);
+}
+
+.courses-catalog-section h2 {
+  margin: 0 0 1rem;
+  color: var(--dark-blue);
+  text-align: center;
+  font-family: "Roboto Slab", serif;
+}
+
+.courses-catalog-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+.courses-empty-state {
+  padding-top: 0 !important;
+  text-align: center;
+  min-height: 2rem;
+  background-color: var(--off-white);
+}
+
+.courses-empty-state p {
+  margin: 0;
+  color: var(--dark-blue);
+}
+
+@media (min-width: 700px) {
+  .courses-filter-section {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .courses-catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .courses-catalog-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .courses-hero-section h1 {
+    font-size: 2.5rem;
+  }
 }

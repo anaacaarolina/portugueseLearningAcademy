@@ -1,0 +1,38 @@
+.admin-kpi-card {
+  background-color: #fff;
+  border: 1px solid rgba(34, 63, 89, 0.1);
+  border-radius: var(--corner-radius);
+  padding: 1rem;
+  filter: var(--drop-shadow);
+  text-align: center;
+}
+
+.admin-kpi-card-icon-wrapper {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 10px;
+  background-color: var(--dark-blue);
+  color: var(--yellow);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-kpi-card-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.admin-kpi-card-value {
+  margin: 0.8rem 0 0.25rem;
+  font-family: "Nunito sans", sans-serif;
+  color: var(--dark-blue);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.admin-kpi-card-title {
+  margin: 0;
+  color: var(--light-blue);
+  font-size: 0.9rem;
+}
