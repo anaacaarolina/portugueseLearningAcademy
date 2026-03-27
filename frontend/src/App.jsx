@@ -13,7 +13,6 @@ import FunFact from "./pages/public/FunFacts/FunFact/FunFact";
 import FunFacts from "./pages/public/FunFacts/FunFacts/FunFacts";
 import AdminDashboard from "./pages/Admin/AdminDashboard/AdminDashboard";
 import StudentDashboard from "./pages/Student/StudentDashboard/StudentDashboard";
-import CreateCourse from "./pages/Admin/CreateCourse/CreateCourse";
 import StudentDetails from "./pages/Student/StudentDetails/StudentDetails";
 
 function ScrollToTopOnRouteChange() {
@@ -43,7 +42,6 @@ function App() {
           <Route path="/fun-facts" element={<FunFacts />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/student-dashboard" element={<StudentDashboard />} />
-          <Route path="/create-course" element={<CreateCourse />} />
           <Route path="/student-details" element={<StudentDetails />} />
         </Route>
       </Routes>
