@@ -10,8 +10,8 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Portuguese Academy API")
 
 origins = [
-    "http://localhost:5173",  # Vite default
-    "http://localhost:3000",  # If using CRA
+    "http://localhost:5173",  
+    "http://localhost:3000", 
 ]
 
 app.add_middleware(
