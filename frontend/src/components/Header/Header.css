@@ -29,6 +29,15 @@
   transition: var(--transition);
 }
 
+.navbar .nav-link-button {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
 .navbar .nav-link:hover,
 .navbar .navbar-text:hover {
   color: var(--yellow);

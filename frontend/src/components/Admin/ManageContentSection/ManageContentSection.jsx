@@ -166,12 +166,8 @@ export default function ManageContentSection() {
         title: "Enrollments",
         description: "Track and update enrollment records and statuses.",
       },
-      {
-        id: "homepage-content",
-        title: "Homepage Highlights",
-        description: "Adjust featured sections, testimonials, and calls to action.",
-      },
     ],
+    // TODO: ADD PROFESSOR
     [],
   );
 

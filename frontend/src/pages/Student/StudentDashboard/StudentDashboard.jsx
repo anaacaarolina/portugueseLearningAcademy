@@ -1,6 +1,7 @@
 import "./StudentDashboard.css";
 import { useState } from "react";
 import { CalendarDays, Clock3, GraduationCap, MapPin, UserRound, UsersRound } from "lucide-react";
+import { getStoredAuth } from "../../../utils/auth";
 
 const studentName = "Ana";
 
@@ -113,9 +114,13 @@ function ClassCard({ item }) {
 }
 
 export default function StudentDashboard() {
+  const { role } = getStoredAuth();
+  const isUnrolledStudent = role === "unrolled_student";
+  const scheduleData = isUnrolledStudent ? [] : scheduleItems;
+
   const [viewMode, setViewMode] = useState("calendar");
   const activeMonth = new Date(2026, 3, 1);
-  const [selectedDay, setSelectedDay] = useState(new Date(`${scheduleItems[0].date}T00:00:00`).getDate());
+  const [selectedDay, setSelectedDay] = useState(scheduleData.length > 0 ? new Date(`${scheduleData[0].date}T00:00:00`).getDate() : 1);
 
   const year = activeMonth.getFullYear();
   const month = activeMonth.getMonth();
@@ -127,7 +132,7 @@ export default function StudentDashboard() {
   });
 
   const classesByDay = {};
-  scheduleItems.forEach((item) => {
+  scheduleData.forEach((item) => {
     const day = new Date(`${item.date}T00:00:00`).getDate();
     if (!classesByDay[day]) {
       classesByDay[day] = [];
@@ -137,13 +142,14 @@ export default function StudentDashboard() {
 
   const selectedDayClasses = classesByDay[selectedDay] || [];
 
-  const currentCourse = scheduleItems[0];
-  const nextClass = scheduleItems[0];
+  const currentCourse = scheduleData[0];
+  const nextClass = scheduleData[0];
 
   return (
     <div className="student-dashboard-page">
       <section className="student-dashboard-hero">
         <h1>Welcome back, {studentName}</h1>
+        {isUnrolledStudent ? <p>You are not enrolled in any course yet.</p> : null}
       </section>
 
       <section className="student-dashboard-content">
@@ -151,7 +157,7 @@ export default function StudentDashboard() {
           <div className="student-dashboard-main-card-header">
             <div>
               <h2>Classes & Calendar</h2>
-              <p>Track your classes in your current course.</p>
+              <p>{isUnrolledStudent ? "You will see your schedule here after enrolling in a course." : "Track your classes in your current course."}</p>
             </div>
 
             <div className="student-view-toggle" role="group" aria-label="Toggle schedule view">
@@ -205,15 +211,16 @@ export default function StudentDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <p className="student-no-classes-message">No classes or events scheduled for this day.</p>
+                  <p className="student-no-classes-message">{isUnrolledStudent ? "No classes available because you are not enrolled in a course." : "No classes or events scheduled for this day."}</p>
                 )}
               </div>
             </div>
           ) : (
             <div className="student-classes-list">
-              {scheduleItems.map((item) => (
+              {scheduleData.map((item) => (
                 <ClassCard key={item.id} item={item} />
               ))}
+              {scheduleData.length === 0 ? <p className="student-no-classes-message">No classes available because you are not enrolled in a course.</p> : null}
             </div>
           )}
         </div>
@@ -230,11 +237,11 @@ export default function StudentDashboard() {
             </li>
             <li>
               <span>Hours completed</span>
-              <strong>34h / 60h</strong>
+              <strong>{isUnrolledStudent ? "0h / 0h" : "34h / 60h"}</strong>
             </li>
             <li>
               <span>Attendance</span>
-              <strong>92%</strong>
+              <strong>{isUnrolledStudent ? "N/A" : "92%"}</strong>
             </li>
             <li>
               <span>Next class</span>

@@ -14,6 +14,7 @@ import FunFacts from "./pages/public/FunFacts/FunFacts/FunFacts";
 import AdminDashboard from "./pages/Admin/AdminDashboard/AdminDashboard";
 import StudentDashboard from "./pages/Student/StudentDashboard/StudentDashboard";
 import StudentDetails from "./pages/Student/StudentDetails/StudentDetails";
+import ProtectedRoute from "./components/Auth/ProtectedRoute/ProtectedRoute";
 
 function ScrollToTopOnRouteChange() {
   const { pathname } = useLocation();
@@ -40,9 +41,15 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/fun-fact" element={<FunFact />} />
           <Route path="/fun-facts" element={<FunFacts />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          <Route path="/student-dashboard" element={<StudentDashboard />} />
-          <Route path="/student-details" element={<StudentDetails />} />
+
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/student-details" element={<StudentDetails />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={["student", "unrolled_student"]} />}>
+            <Route path="/student-dashboard" element={<StudentDashboard />} />
+          </Route>
         </Route>
       </Routes>
     </>
