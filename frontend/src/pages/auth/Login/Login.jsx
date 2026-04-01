@@ -7,65 +7,14 @@ import "./Login.css";
 export default function Login() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
 
   const handleRedirectHome = () => {
     navigate("/");
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
-
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get("email")?.toString().trim() ?? "";
-    const password = formData.get("password")?.toString() ?? "";
-    const rememberMe = formData.get("terms") === "on";
-
-    setErrorMessage("");
-    setIsSubmitting(true);
-
-    try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-      const payload = new URLSearchParams({
-        username: email,
-        password,
-      });
-
-      const response = await fetch(`${apiBaseUrl}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: payload.toString(),
-      });
-
-      if (!response.ok) {
-        let backendMessage = "Unable to sign in. Please check your credentials.";
-
-        try {
-          const data = await response.json();
-          if (typeof data?.detail === "string") {
-            backendMessage = data.detail;
-          }
-        } catch {
-          // Fall back to default message when response has no JSON body.
-        }
-
-        throw new Error(backendMessage);
-      }
-
-      const data = await response.json();
-      const storage = rememberMe ? localStorage : sessionStorage;
-      storage.setItem("access_token", data.access_token);
-      storage.setItem("token_type", data.token_type);
-
-      navigate("/student-dashboard");
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    navigate("/");
   };
 
   return (
@@ -81,8 +30,6 @@ export default function Login() {
           </div>
 
           <form className="login-form" onSubmit={handleSubmit}>
-            {errorMessage ? <p className="login-form__error-msg">{errorMessage}</p> : null}
-
             <label htmlFor="login-email">Email</label>
             <input id="login-email" name="email" type="email" placeholder="youremail@example.com" required />
 
@@ -95,15 +42,15 @@ export default function Login() {
             </div>
             <div className="login-checkbox-password-reset">
               <label className="login-form__checkbox" htmlFor="login-terms">
-                <input id="login-terms" name="terms" type="checkbox" />
+                <input id="login-terms" name="terms" type="checkbox" required />
                 <span className="login-form__checkmark" aria-hidden="true"></span>
                 <span className="login-form__checkbox-text">Remember Me</span>
               </label>
               <p className="login-password-reset">Forgot your password?</p>
             </div>
 
-            <button type="submit" className="login-form__submit-btn" disabled={isSubmitting}>
-              {isSubmitting ? "Signing in..." : "Sign in"}
+            <button type="submit" className="login-form__submit-btn">
+              Sign in
             </button>
           </form>
 

@@ -16,7 +16,7 @@
   margin: 0.5rem 0;
   color: var(--yellow);
   font-size: 0.8rem;
-  font-weight: bold;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -45,7 +45,7 @@
   display: block;
   margin-bottom: 0.45rem;
   color: var(--dark-blue);
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .courses-filter-select .react-select__control {

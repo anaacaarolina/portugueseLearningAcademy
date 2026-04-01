@@ -4,9 +4,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql import func
 from database import Base
+#from flask_sqlalchemy import SQLAlchemy
+
 import enum
 
-# --- Enum Types ---
 
 class UserRole(str, enum.Enum):
     student = "student"
@@ -66,18 +67,15 @@ class BookingStatus(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
     id = Column(BigInteger, primary_key=True, index=True)
-    full_name = Column(String)
     name = Column(String)
     email = Column(String, unique=True)
     phone = Column(String)
-    hashed_password = Column(String)
     password = Column(String)
     google_id = Column(String)
     facebook_id = Column(String)
     apple_id = Column(String)
     email_verified_at = Column(DateTime)
     role = Column(Enum(UserRole))
-    is_active = Column(Boolean, default=True)
     street = Column(String)
     city = Column(String)
     postal_code = Column(String)
@@ -221,3 +219,14 @@ class ClassBooking(Base):
     booked_at = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+class Student(Base):
+    __tablename__ = "students"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    email = Column(String(100), unique=True, nullable=False)
+    phone = Column(String(30), nullable=False)
+    course = Column(String(50), nullable=False)
+    status = Column(String(20), nullable=False)
+    notes = Column(Text)

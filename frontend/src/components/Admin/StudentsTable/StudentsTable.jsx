@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import "./StudentsTable.css";
-
 function getInitials(name) {
   return name
     .split(" ")
@@ -11,6 +10,7 @@ function getInitials(name) {
 }
 
 export default function StudentsTable({ students }) {
+  
   return (
     <section className="admin-students-section">
       <div className="admin-students-header">
@@ -48,9 +48,10 @@ export default function StudentsTable({ students }) {
                   <span className={`admin-student-status-pill status-${student.status.toLowerCase()}`}>{student.status}</span>
                 </td>
                 <td>
-                  <Link className="admin-student-action-link" to="/student-details">
-                    View Details
-                  </Link>
+                    <Link
+                        className="admin-student-action-link" to={`/student-details/${student.id}`}>
+                        View Details
+                    </Link>
                 </td>
               </tr>
             ))}
