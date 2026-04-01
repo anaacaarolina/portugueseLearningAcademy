@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-from datetime import datetime, date, time
+from datetime import datetime, date as dt_date, time as dt_time
 from decimal import Decimal
 from models import (
     UserRole, CourseLevel, CourseType, CourseRegime, CourseStatus,
@@ -14,10 +14,11 @@ from models import (
 # ─────────────────────────────────────────
 
 class UserBase(BaseModel):
-    name: Optional[str] = None
+    full_name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     role: Optional[UserRole] = None
+    is_active: Optional[bool] = True
     street: Optional[str] = None
     city: Optional[str] = None
     postal_code: Optional[str] = None
@@ -42,6 +43,15 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
 
 # ─────────────────────────────────────────
 # TEACHERS
@@ -104,8 +114,8 @@ class CourseBase(BaseModel):
     description: Optional[str] = None
     level: Optional[CourseLevel] = None
     type: Optional[CourseType] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    start_date: Optional[dt_date] = None
+    end_date: Optional[dt_date] = None
     total_hours: Optional[Decimal] = None
     max_students: Optional[int] = None
     regime: Optional[CourseRegime] = None
@@ -137,14 +147,14 @@ class CourseResponse(CourseBase):
 class CourseScheduleBase(BaseModel):
     course_id: Optional[int] = None
     day_of_week: Optional[DayOfWeek] = None
-    start_time: Optional[time] = None
-    end_time: Optional[time] = None
+    start_time: Optional[dt_time] = None
+    end_time: Optional[dt_time] = None
 
 class CourseScheduleCreate(CourseScheduleBase):
     course_id: int
     day_of_week: DayOfWeek
-    start_time: time
-    end_time: time
+    start_time: dt_time
+    end_time: dt_time
 
 class CourseScheduleUpdate(CourseScheduleBase):
     pass
@@ -317,16 +327,16 @@ class NotificationResponse(NotificationBase):
 
 class TeacherAvailabilityBase(BaseModel):
     teacher_id: Optional[int] = None
-    date: Optional[date] = None
-    start_time: Optional[time] = None
-    end_time: Optional[time] = None
+    date: Optional[dt_date] = None
+    start_time: Optional[dt_time] = None
+    end_time: Optional[dt_time] = None
     is_booked: Optional[bool] = False
 
 class TeacherAvailabilityCreate(TeacherAvailabilityBase):
     teacher_id: int
-    date: date
-    start_time: time
-    end_time: time
+    date: dt_date
+    start_time: dt_time
+    end_time: dt_time
 
 class TeacherAvailabilityUpdate(TeacherAvailabilityBase):
     pass
