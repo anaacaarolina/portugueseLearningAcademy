@@ -47,6 +47,11 @@ export default function Header() {
               </Link>
             </li>
             <li className="nav-item">
+              <Link to="/student-dashboard" className="nav-link" onClick={closeMenu}>
+                Student
+              </Link>
+            </li>
+            <li className="nav-item">
               <Link to="/login" className="nav-link" onClick={closeMenu}>
                 <User className="nav-icon" size="1em" aria-hidden="true" />
                 <span>Login</span>

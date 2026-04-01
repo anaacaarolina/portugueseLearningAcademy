@@ -56,7 +56,7 @@
 .register-divider span {
   position: relative;
   padding: 0 0.9rem;
-  background-color: #ffffff;
+  background-color: white;
 }
 
 .register-form {
@@ -67,7 +67,7 @@
 
 .register-form label {
   font-size: 0.86rem;
-  font-weight: 700;
+  font-weight: bold;
   color: var(--text-color);
 }
 

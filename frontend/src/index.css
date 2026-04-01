@@ -16,6 +16,8 @@
   --status-completed-color: #2f3e8c;
   --status-canceled-bg: #f5d8d8;
   --status-canceled-color: #5c0f0f;
+  --border-color: #223f591a;
+  --secondary-border-color: #223f5952;
 
   /* EFFECTS */
   --transition: 0.15s ease;

@@ -35,6 +35,7 @@ Current implementation status:
 - Backend app bootstraps FastAPI, enables CORS for localhost origins, and creates database tables from SQLAlchemy models on startup.
 - A minimal health-style API is available at / and /api/test.
 - SQLAlchemy models and Pydantic schemas for major business entities already exist.
+- Core business logic services are now implemented in backend/services for enrollments, payments, waitlist, bookings, and hour transfers.
 
 ## Architecture
 
@@ -123,6 +124,29 @@ Backend lives in backend/.
   - http://localhost:5173
   - http://localhost:3000
 
+### Service layer (implemented)
+
+The backend already contains domain services that enforce business rules, even though most domain routers are not yet exposed in main.py.
+
+- enrollmentService.py
+  - Enroll with pre-checks (verified email, duplicate prevention, capacity checks)
+  - Waitlist join for full group courses
+  - Pre-enrollment creation and conversion when course becomes active
+- paymentService.py
+  - Stripe checkout for package and extra-hour purchases
+  - One-active-package enforcement per enrollment
+  - Webhook handling for paid, failed, and refunded events
+- waitlistService.py
+  - Queue promotion, offer acceptance, offer expiry, and stale offer batch expiry
+  - Waitlist position and course queue retrieval helpers
+- bookingService.py
+  - Individual-class booking with slot reservation and balance validation
+  - Completion and no-show state transitions
+  - Availability and enrollment booking read helpers
+- transferService.py
+  - Atomic hour transfers between two active enrollments from different students
+  - Transfer audit logging and notification queueing
+
 ### Data layer
 
 Major entities are modeled in backend/models.py, including:
@@ -153,14 +177,24 @@ The schema already reflects core business constraints such as:
 - waitlist position and lifecycle states
 - hour package and transfer support
 
+The service layer additionally enforces operational rules, including:
+
+- verified email before enrollment actions
+- one active package per enrollment (no new purchase while hours remaining > 0)
+- group-course capacity and waitlist promotion flow
+- transfer-only policy as cancellation alternative
+- booking and no-show handling rules
+
 For an expanded explanation of business rules and relationship mapping, see architecture.md.
 
 ## API and Routes
 
-At this stage, backend exposes only bootstrap endpoints:
+At this stage, backend still exposes only bootstrap endpoints:
 
 - GET / -> backend status message
 - GET /api/test -> API connectivity message
+
+Business-domain behavior is currently implemented in service modules under backend/services and documented in businessLogic.md.
 
 The architecture document outlines target domains for future router modules such as auth, courses, enrollments, waitlist, bookings, payments, notifications, and admin operations.
 
@@ -241,6 +275,7 @@ Backend currently has no automated test command configured in this repository.
 - backend/requirements.txt is encoded as UTF-16 LE. Some tools assume UTF-8 and may fail when reading it.
 - backend/main.py currently auto-creates tables on startup via SQLAlchemy metadata.
 - CORS is restricted to localhost origins in development.
+- Most domain services are implemented but not yet wired to public FastAPI routers/endpoints.
 - Avoid editing generated/dependency folders such as frontend/node_modules, frontend/dist, backend/venv, and **pycache**.
 
 ## Development Conventions
@@ -256,4 +291,4 @@ Follow the conventions already used in this repository:
 
 ## Roadmap Alignment
 
-This repository already contains a strong data model and frontend page structure aligned with the architecture goals. The next major milestone is to connect frontend flows to dedicated FastAPI router modules and service-layer business logic described in architecture.md.
+This repository already contains a strong data model, frontend page structure, and implemented backend service logic aligned with the architecture goals. The next major milestone is wiring these service modules into dedicated FastAPI routers and connecting the frontend flows to those APIs.

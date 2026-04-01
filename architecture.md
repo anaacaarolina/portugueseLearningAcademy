@@ -17,8 +17,8 @@
 └────────────────────────┬────────────────────────────────┘
                          │ HTTPS / REST JSON
 ┌────────────────────────▼────────────────────────────────┐
-│              FastAPI Application  (backend/)             │
-│   main.py · routers/ · services/ · models/ · schemas/   │
+│              FastAPI Application  (backend/)            │
+│   main.py · services/ · models.py · schemas.py          │
 └──────┬───────────────────────┬──────────────────────────┘
        │                       │
 ┌──────▼──────┐      ┌─────────▼──────────┐
@@ -57,12 +57,16 @@ portugueseLearningAcademy/
 │   └── package.json
 │
 ├── backend/                    # FastAPI app
-│   ├── main.py                 # App factory, CORS, router registration
+│   ├── main.py                 # App bootstrap, CORS, basic endpoints
 │   ├── database.py             # SQLAlchemy engine + get_db() session
-│   ├── models/                 # SQLAlchemy ORM models (one file per table)
-│   ├── schemas/                # Pydantic request/response schemas
-│   ├── routers/                # FastAPI APIRouter modules
-│   ├── services/               # Business logic (payments, notifications…)
+│   ├── models.py               # SQLAlchemy ORM models
+│   ├── schemas.py              # Pydantic request/response schemas
+│   ├── services/               # Business logic modules
+│   │   ├── enrollmentService.py
+│   │   ├── paymentService.py
+│   │   ├── waitlistService.py
+│   │   ├── bookingService.py
+│   │   └── transferService.py
 │   ├── .env.example
 │   └── requirements.txt        # UTF-16 LE encoded — handle with care
 │
@@ -127,9 +131,14 @@ portugueseLearningAcademy/
 | Notifications | WhatsApp Business API + SMTP email                         |
 | Auth          | JWT (email/password) + OAuth 2.0 (Google, Facebook, Apple) |
 
-### 5.2 Router Modules
+### 5.2 API Surface and Router Plan
 
-Each router owns one domain area and is registered in `main.py`.
+Current API surface exposed in main.py:
+
+- GET /
+- GET /api/test
+
+Planned router modules (to wire existing service logic to HTTP endpoints):
 
 | Module            | Prefix             | Responsibility                                          |
 | ----------------- | ------------------ | ------------------------------------------------------- |
@@ -149,18 +158,25 @@ Each router owns one domain area and is registered in `main.py`.
 
 ### 5.3 Service Layer
 
-Business logic that spans multiple tables lives in `services/`, not in routers.
+Business logic that spans multiple tables is implemented in backend/services.
 
-| Service                | Key responsibilities                                               |
-| ---------------------- | ------------------------------------------------------------------ |
-| `enrollment_service`   | Check capacity, deduct hours, trigger waitlist promotion           |
-| `payment_service`      | Create Stripe session, handle webhook, update payment + enrollment |
-| `waitlist_service`     | Advance positions, send offer notifications, handle expiry         |
-| `notification_service` | Route messages to WhatsApp or email, persist to `notifications`    |
-| `booking_service`      | Validate availability, deduct `hours_used` on completion           |
-| `transfer_service`     | Move hours between enrollments, write `hour_transfers` record      |
+| Service             | Key responsibilities                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------------------- |
+| `enrollmentService` | Verified-email gate, duplicate checks, group capacity, pre-enrollment conversion                   |
+| `paymentService`    | Stripe checkout flows (package/extra-hour), one-active-package enforcement, webhook processing     |
+| `waitlistService`   | Promote next student, offer acceptance/expiry, stale offer expiration                              |
+| `bookingService`    | Individual booking rules, slot locking, completion/no-show transitions                             |
+| `transferService`   | Atomic hour transfer, status update to transferred when balance reaches zero, transfer audit trail |
 
-### 5.4 Environment Variables
+### 5.4 Implemented Business Rules (Service-Enforced)
+
+- Enrollment - verified email required - no duplicate enrollment per (user, course) - group capacity enforced with COURSE_FULL handling and waitlist path - pre-enrollments converted in FIFO order when a draft course becomes active
+- Payments and hours - one active package per enrollment (purchase blocked while hours_remaining > 0) - package, trial, and extra-hour payment flows - Stripe webhook updates for paid, failed, and refunded statuses
+- Waitlist - waiting -> offered -> accepted or expired lifecycle - promotion of next queue entry and multi-channel offer notifications
+- Transfers - transfer-only alternative to cancellation - source and destination enrollment validations - atomic debit/credit with audit logging
+- Bookings - individual courses use teacher availability slots - slot is reserved and hours are deducted at booking time for individual classes - completion/no-show transitions supported
+
+### 5.5 Environment Variables
 
 Defined in `backend/.env.example`. Key variables:
 
@@ -233,24 +249,26 @@ teachers ──< teacher_availability
 
 ---
 
-## 8. Payment Flow
+## 8. Payment and Hours Flow
 
 ```
 Student selects package
        │
        ▼
-POST /payments → payment_service creates Stripe Checkout Session
+POST /payments (planned router) → paymentService creates Stripe Checkout Session
        │
        ▼
 Redirect to Stripe hosted page
        │
        ▼
-Stripe calls POST /payments/webhook
+Stripe calls POST /payments/webhook (planned router)
        │
-       ├─ status = 'paid'  → update payment, credit hours to enrollment
-       ├─ status = 'failed' → update payment, notify student
-       └─ status = 'refunded' → update payment, reverse hours
+       ├─ status = 'paid'     → update payment, credit hours to enrollment
+       ├─ status = 'failed'   → update payment, notify student
+       └─ status = 'refunded' → update payment, reverse hours with safety checks
 ```
+
+One-active-package rule: if an enrollment has hours_remaining > 0, a new package purchase is rejected until hours are consumed or transferred.
 
 All prices are in **EUR**. Stripe handles multi-currency display; the platform stores amounts in euros.
 
@@ -258,7 +276,7 @@ All prices are in **EUR**. Stripe handles multi-currency display; the platform s
 
 ## 9. Notification Flow
 
-Notifications are queued as `pending` records in the `notifications` table and dispatched by `notification_service`.
+Notifications are queued as pending records in the notifications table by service modules and can be dispatched by a dedicated notification process.
 
 | Event                             | Channel                                                            |
 | --------------------------------- | ------------------------------------------------------------------ |
@@ -268,6 +286,12 @@ Notifications are queued as `pending` records in the `notifications` table and d
 | Class reminder                    | WhatsApp                                                           |
 | Waitlist offer                    | WhatsApp + Email                                                   |
 | Waitlist offer expired            | Email                                                              |
+
+Additional events queued by services include:
+
+- payment failed
+- payment refunded
+- hours transferred out/in
 
 ---
 
@@ -316,3 +340,11 @@ uvicorn main:app --reload          # Start FastAPI dev server
 - If a request touches routing or layout, confirm expected navigation paths.
 - If a request touches DB behaviour, confirm `DATABASE_URL` and local DB availability.
 - Link existing files in documentation rather than duplicating their content.
+
+---
+
+## 13. Current Status Snapshot
+
+- Data model and service-layer business logic are implemented.
+- Main FastAPI app currently exposes only bootstrap endpoints.
+- Next delivery step is router wiring for enrollments, payments, waitlist, bookings, transfers, and related admin flows.
