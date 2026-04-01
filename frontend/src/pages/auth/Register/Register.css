@@ -65,6 +65,16 @@
   gap: 0.55rem;
 }
 
+.register-form__error-msg {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background-color: #fdebec;
+  border: 1px solid #f4b1b7;
+  color: #8f1f2d;
+  font-size: 0.85rem;
+}
+
 .register-form label {
   font-size: 0.86rem;
   font-weight: bold;
@@ -207,6 +217,11 @@
   font-size: 1rem;
   cursor: pointer;
   transition: var(--transition);
+}
+
+.register-form__submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .register-form__submit-btn:hover {
