@@ -28,3 +28,4 @@ app.include_router(courses_router, prefix="/courses", tags=["Cursos"])
 @app.get("/")
 async def read_root():
     return {"message": "Bem-vindo à API"}
+t
