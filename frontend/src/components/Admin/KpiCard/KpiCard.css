@@ -1,5 +1,5 @@
 .admin-kpi-card {
-  background-color: #fff;
+  background-color: white;
   border: 1px solid rgba(34, 63, 89, 0.1);
   border-radius: var(--corner-radius);
   padding: 1rem;
@@ -28,7 +28,7 @@
   font-family: "Nunito sans", sans-serif;
   color: var(--dark-blue);
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: bold;
 }
 
 .admin-kpi-card-title {

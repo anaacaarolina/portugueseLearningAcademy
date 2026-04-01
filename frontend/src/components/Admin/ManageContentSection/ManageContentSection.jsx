@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import "./ManageContentSection.css";
 
 const teachers = ["Professor Sofia Rodrigues", "Professor Tiago Almeida", "Professor Mariana Costa", "Professor Rui Fernandes"];

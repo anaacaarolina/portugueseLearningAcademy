@@ -8,14 +8,65 @@ export default function Register() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleRedirectHome = () => {
     navigate("/");
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    navigate("/");
+
+    const formData = new FormData(event.currentTarget);
+    const fullName = formData.get("fullName")?.toString().trim() ?? "";
+    const email = formData.get("email")?.toString().trim() ?? "";
+    const password = formData.get("password")?.toString() ?? "";
+    const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+      const response = await fetch(`${apiBaseUrl}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          full_name: fullName,
+          email,
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        let backendMessage = "Unable to create your account. Please try again.";
+
+        try {
+          const data = await response.json();
+          if (typeof data?.detail === "string") {
+            backendMessage = data.detail;
+          }
+        } catch {
+          // Fall back to default message when response has no JSON body.
+        }
+
+        throw new Error(backendMessage);
+      }
+
+      navigate("/login");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -31,6 +82,8 @@ export default function Register() {
           </div>
 
           <form className="register-form" onSubmit={handleSubmit}>
+            {errorMessage ? <p className="register-form__error-msg">{errorMessage}</p> : null}
+
             <label htmlFor="register-fullname">
               Full name <span className="register-required-star">*</span>
             </label>
@@ -69,8 +122,8 @@ export default function Register() {
               </p>
             </label>
 
-            <button type="submit" className="register-form__submit-btn">
-              Sign up
+            <button type="submit" className="register-form__submit-btn" disabled={isSubmitting}>
+              {isSubmitting ? "Creating account..." : "Sign up"}
             </button>
           </form>
 

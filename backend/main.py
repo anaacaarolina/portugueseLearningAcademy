@@ -2,14 +2,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 import models
+from routers.auth import router as auth_router
+from routers.courses import router as courses_router
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(title="Portuguese Academy API")
 
 origins = [
-    "http://localhost:5173",  # Vite default
-    "http://localhost:3000",  # If using CRA
+    "http://localhost:5173",  
+    "http://localhost:3000", 
 ]
 
 app.add_middleware(
@@ -20,10 +22,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def read_root():
-    return {"message": "Backend is running!"}
+app.include_router(auth_router, prefix="/auth", tags=["Autenticação"])
+app.include_router(courses_router, prefix="/courses", tags=["Cursos"])
 
-@app.get("/api/test")
-def test():
-    return {"data": "Hello from FastAPI"}
+@app.get("/")
+async def read_root():
+    return {"message": "Bem-vindo à API"}

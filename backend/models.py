@@ -66,15 +66,18 @@ class BookingStatus(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
     id = Column(BigInteger, primary_key=True, index=True)
+    full_name = Column(String)
     name = Column(String)
     email = Column(String, unique=True)
     phone = Column(String)
+    hashed_password = Column(String)
     password = Column(String)
     google_id = Column(String)
     facebook_id = Column(String)
     apple_id = Column(String)
     email_verified_at = Column(DateTime)
     role = Column(Enum(UserRole))
+    is_active = Column(Boolean, default=True)
     street = Column(String)
     city = Column(String)
     postal_code = Column(String)

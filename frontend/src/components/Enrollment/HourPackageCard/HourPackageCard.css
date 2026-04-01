@@ -39,7 +39,7 @@
   background-color: var(--yellow);
   color: var(--dark-blue);
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: bold;
   padding: 0.22rem 0.62rem;
   border-radius: 999px;
 }
