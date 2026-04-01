@@ -48,6 +48,8 @@ class UserResponse(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user_role: str
+    has_active_enrollment: bool
 
 
 class TokenData(BaseModel):

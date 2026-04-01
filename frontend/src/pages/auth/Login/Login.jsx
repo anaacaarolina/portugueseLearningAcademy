@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeClosed } from "lucide-react";
 import { useState } from "react";
 import SocialAuthPanel from "../../../components/Auth/SocialAuthPanel/SocialAuthPanel";
+import { getDashboardPathByRole } from "../../../utils/auth";
 import "./Login.css";
 
 export default function Login() {
@@ -57,10 +58,24 @@ export default function Login() {
 
       const data = await response.json();
       const storage = rememberMe ? localStorage : sessionStorage;
+
+      // Keep storage clean so old role/token values do not conflict across sessions.
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("token_type");
+      localStorage.removeItem("auth_role");
+      localStorage.removeItem("has_active_enrollment");
+      sessionStorage.removeItem("access_token");
+      sessionStorage.removeItem("token_type");
+      sessionStorage.removeItem("auth_role");
+      sessionStorage.removeItem("has_active_enrollment");
+
       storage.setItem("access_token", data.access_token);
       storage.setItem("token_type", data.token_type);
+      storage.setItem("auth_role", data.user_role || "student");
+      storage.setItem("has_active_enrollment", String(Boolean(data.has_active_enrollment)));
 
-      navigate("/student-dashboard");
+      const dashboardPath = getDashboardPathByRole(data.user_role || "student") || "/";
+      navigate(dashboardPath);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
     } finally {

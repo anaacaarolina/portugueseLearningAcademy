@@ -17,6 +17,8 @@ def _users_columns(db: Session) -> set[str]:
 
 def _fetch_user_by_email(db: Session, email: str, columns: set[str]):
     selected = ["id", "email"]
+    if "role" in columns:
+        selected.append("role")
     if "hashed_password" in columns:
         selected.append("hashed_password")
     if "password" in columns:
@@ -106,5 +108,31 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    has_active_enrollment = False
+    enrollment_columns = set()
+    inspector = inspect(db.bind)
+    if "enrollments" in inspector.get_table_names():
+        enrollment_columns = {column["name"] for column in inspector.get_columns("enrollments")}
+
+    if {"user_id", "status"}.issubset(enrollment_columns):
+        active_enrollment_query = text(
+            "SELECT 1 FROM enrollments WHERE user_id = :user_id AND status = :status LIMIT 1"
+        )
+        has_active_enrollment = (
+            db.execute(active_enrollment_query, {"user_id": user["id"], "status": "active"}).scalar()
+            is not None
+        )
+
+    db_role = (user.get("role") or "student").lower()
+    if db_role == UserRole.admin.value:
+        user_role = UserRole.admin.value
+    else:
+        user_role = "student" if has_active_enrollment else "unrolled_student"
+
     access_token = create_access_token(data={"sub": user["email"]})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_role": user_role,
+        "has_active_enrollment": has_active_enrollment,
+    }
