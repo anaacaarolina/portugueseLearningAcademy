@@ -1,7 +1,5 @@
-from sqlalchemy import (
-    Column, BigInteger, String, Text, Enum, DateTime, Date,
-    Time, Boolean, Numeric, SmallInteger, Integer, ForeignKey, UniqueConstraint
-)
+from sqlalchemy import (Column, BigInteger, String, Text, Enum, DateTime, Date,
+    Time, Boolean, Numeric, SmallInteger, Integer, ForeignKey, UniqueConstraint)
 from sqlalchemy.sql import func
 from database import Base
 import enum
@@ -49,6 +47,9 @@ class EnrollmentStatus(str, enum.Enum):
 
 class PreEnrollmentStatus(str, enum.Enum):
     pending = "pending"; converted = "converted"; cancelled = "cancelled"
+    
+class CommentStatus(str, enum.Enum):
+    pending = "pending"; published = "published"; hidden = "hidden"
 
 class NotificationChannel(str, enum.Enum):
     whatsapp = "whatsapp"; email = "email"
@@ -221,3 +222,35 @@ class ClassBooking(Base):
     booked_at = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+class FunFactTag(Base):
+    __tablename__ = "fun_fact_tags"
+    id         = Column(BigInteger, primary_key=True, index=True)
+    name       = Column(String, unique=True, nullable=False) 
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+class FunFact(Base):
+    __tablename__ = "fun_facts"
+    id                = Column(BigInteger, primary_key=True, index=True)
+    title             = Column(String, nullable=False)
+    slug              = Column(String, unique=True, nullable=False, index=True)
+    tag_id            = Column(BigInteger, ForeignKey("fun_fact_tags.id"), nullable=False)
+    body              = Column(Text, nullable=False)
+    key_points        = Column(Text, nullable=False, default=list)
+    did_you_know      = Column(Text, nullable=True)
+    image_url         = Column(String, nullable=True)
+    read_time_minutes = Column(SmallInteger, nullable=True)
+    is_published      = Column(Boolean, default=False, nullable=False)
+    created_at        = Column(DateTime, default=func.now())
+    updated_at        = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+class Comment(Base):
+    __tablename__ = "comments"
+    id          = Column(BigInteger, primary_key=True, index=True)
+    author      = Column (String, nullable=False)
+    rating      = Column(SmallInteger, nullable=False)
+    status      = Column(Enum(CommentStatus), default=CommentStatus.pending)
+    body        = Column(Text, nullable=False)
+    created_at  = Column(DateTime, default=func.now())
+    updated_at  = Column(DateTime, default=func.now(), onupdate=func.now())
