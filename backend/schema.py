@@ -377,3 +377,24 @@ class ClassBookingResponse(ClassBookingBase):
 
     class Config:
         from_attributes = True
+
+# ─────────────────────────────────────────
+# FUN FACT TAGS
+# ─────────────────────────────────────────
+
+class FunFactTagBase(BaseModel):
+    name: Optional[str] = None
+
+class FunFactTagCreate(FunFactTagBase):
+    name: str
+
+class FunFactTagUpdate(FunFactTagBase):
+    name: str
+
+class FunFactTagResponse(FunFactTagBase):
+    id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
