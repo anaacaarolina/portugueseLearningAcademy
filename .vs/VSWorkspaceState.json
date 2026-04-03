@@ -1,7 +1,16 @@
 {
   "ExpandedNodes": [
     "",
-    "\\backend"
+    "\\backend",
+    "\\backend\\Services",
+    "\\frontend",
+    "\\frontend\\src",
+    "\\frontend\\src\\pages",
+    "\\frontend\\src\\pages\\auth",
+    "\\frontend\\src\\pages\\auth\\Login",
+    "\\frontend\\src\\pages\\public",
+    "\\frontend\\src\\pages\\public\\Payment",
+    "\\frontend\\src\\pages\\public\\Payment\\Payment"
   ],
   "SelectedNode": "\\backend\\main.py",
   "PreviewInSolutionExplorer": false

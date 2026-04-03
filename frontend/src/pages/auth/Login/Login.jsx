@@ -4,6 +4,9 @@ import { useState } from "react";
 import SocialAuthPanel from "../../../components/Auth/SocialAuthPanel/SocialAuthPanel";
 import "./Login.css";
 
+export function getCurrentUser() {
+    return JSON.parse(localStorage.getItem("user"));
+}
 export default function Login() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -12,10 +15,28 @@ export default function Login() {
     navigate("/");
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    navigate("/");
-  };
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+
+        const res = await fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: formData.get("email"),
+                password: formData.get("password"),
+            }),
+        });
+
+        const user = await res.json();
+
+        localStorage.setItem("user", JSON.stringify(user));
+
+        navigate("/");
+    };;
+
+    
 
   return (
     <section className="login">
