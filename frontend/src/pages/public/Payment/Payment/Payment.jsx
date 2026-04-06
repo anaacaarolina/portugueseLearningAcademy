@@ -4,6 +4,7 @@ import Select from "react-select";
 import countryList from "react-select-country-list";
 import { CreditCard } from "lucide-react";
 import { FaPaypal } from "react-icons/fa";
+import { getCurrentUser } from "../../../../utils/auth";
 
 export default function Payment() {
   const countryOptions = useMemo(() => countryList().getData(), []);
@@ -44,6 +45,19 @@ export default function Payment() {
       [name]: value,
     }));
   };
+
+    const handlePayment = async () => {
+        const user = getCurrentUser();
+
+        await fetch("/api/payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                userId: user.id,
+                amount: total,
+            }),
+        });
+    };
 
   return (
     <section className="payment">

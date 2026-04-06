@@ -220,13 +220,15 @@ class ClassBooking(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
+
+
 class Student(Base):
     __tablename__ = "students"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
-    email = Column(String(100), unique=True, nullable=False)
-    phone = Column(String(30), nullable=False)
-    course = Column(String(50), nullable=False)
-    status = Column(String(20), nullable=False)
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    email = Column(String, unique=True)
+    phone = Column(String)
+    course = Column(String)
+    status = Column(String)
     notes = Column(Text)

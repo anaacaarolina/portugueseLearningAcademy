@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import BackgroundTasks, APIRouter
+from services.email_service import send_email
 from sqlalchemy.orm import Session
 
 from database import SessionLocal, engine
@@ -19,6 +21,124 @@ app = FastAPI()
 import models
 
 models.Base.metadata.create_all(bind=engine)
+
+
+router = APIRouter()
+
+@router.post("/api/register")
+def register(user: dict, background_tasks: BackgroundTasks):
+
+    background_tasks.add_task(
+        send_notification,
+        NotificationType.REGISTRATION,
+        user["email"],
+        {"name": user["fullName"]}
+    )
+
+    return {"message": "User registered"}
+
+app.include_router(router)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.post("/api/payment")
+def payment(data: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+
+    user = db.query(models.User).filter(models.User.id == data["userId"]).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    background_tasks.add_task(
+        send_notification,
+        NotificationType.PAYMENT,
+        user.email,
+        {
+            "name": user.name,
+            "amount": data["amount"]
+        }
+    )
+
+    return {"message": "Payment successful"}
+
+@router.post("/api/enroll")
+def enroll(data: dict, background_tasks: BackgroundTasks):
+
+    background_tasks.add_task(
+        send_notification,
+        NotificationType.ENROLLMENT,
+        data["email"],
+        {
+            "name": data["name"],
+            "course": data["course"]
+        }
+    )
+
+    return {"message": "Enrolled"}
+
+@router.post("/api/waitlist")
+def waitlist(data: dict, background_tasks: BackgroundTasks):
+
+    background_tasks.add_task(
+        send_notification,
+        NotificationType.WAITLIST,
+        data["email"],
+        {"name": data["name"]}
+    )
+
+    return {"message": "Added to waitlist"}
+
+import uuid
+
+@router.post("/api/send-verification")
+def send_verification(email: str, background_tasks: BackgroundTasks):
+    # stores token in DB
+    token = str(uuid.uuid4())
+
+    
+
+    background_tasks.add_task(
+        send_notification,
+        NotificationType.EMAIL_VERIFICATION,
+        email,
+        {"token": token}
+    )
+
+    return {"message": "Verification sent"}
+
+@router.post("/api/notify")
+def notify(data: dict, background_tasks: BackgroundTasks):
+
+    background_tasks.add_task(
+        send_notification,
+        NotificationType.ACTIVITY,
+        data["email"],
+        {"message": data["message"]}
+    )
+
+    return {"message": "Notification sent"}
+
+
+@app.post("/api/login")
+def login(data: dict, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == data["email"]).first()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # (skip password hashing for now)
+
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name
+    }
+
 
 origins = [
     "http://localhost:5173",  # Vite default
@@ -116,6 +236,39 @@ def save_notes(id: int, body: dict, db: Session = Depends(get_db)):
 
     return {"message": "Notes saved"}
 
+@app.get("/api/students")
+def get_students(db: Session = Depends(get_db)):
+    students = db.query(models.Student).all()
+
+    return [
+        {
+            "id": s.id,
+            "name": s.name,
+            "email": s.email,
+            "phone": s.phone,
+            "course": s.course,
+            "status": s.status,
+            "notes": s.notes,
+        }
+        for s in students
+    ]
+
+@app.post("/api/students")
+def create_student(data: dict, db: Session = Depends(get_db)):
+    student = models.Student(
+        name=data["name"],
+        email=data["email"],
+        phone=data["phone"],
+        course=data["course"],
+        status=data["status"],
+        notes=""
+    )
+
+    db.add(student)
+    db.commit()
+    db.refresh(student)
+
+    return {"message": "Student created", "id": student.id}
 
 @app.delete("/api/students/{id}")
 def delete_student(id: int, db: Session = Depends(get_db)):
@@ -126,5 +279,4 @@ def delete_student(id: int, db: Session = Depends(get_db)):
 
     db.delete(student)
     db.commit()
-
     return {"message": "Student deleted"}

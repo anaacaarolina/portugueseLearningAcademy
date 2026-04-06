@@ -1,3 +1,6 @@
 backend/venv
 backend/.env
+.vs/
+bin/
+obj/
 .github
