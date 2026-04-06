@@ -15,7 +15,25 @@ export default function Register() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    navigate("/");
+      navigate("/");
+
+      const formData = new FormData(event.target);
+
+      const data = {
+          FullName: formData.get("fullName"),
+          Email: formData.get("email"),
+          Password: formData.get("password"),
+      };
+
+      await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              fullName,
+              email,
+              password,
+          }),
+      });
   };
 
   return (
