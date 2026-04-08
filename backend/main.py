@@ -1,12 +1,15 @@
+from zoneinfo import available_timezones
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import BackgroundTasks, APIRouter
 from services.email_service import send_email
 from sqlalchemy.orm import Session
+from fastapi import Body
 
 from database import SessionLocal, engine
 #from flask import Flask, request, jsonify
 import models
+
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -280,3 +283,70 @@ def delete_student(id: int, db: Session = Depends(get_db)):
     db.delete(student)
     db.commit()
     return {"message": "Student deleted"}
+
+@app.post("/api/teachers")
+def create_teacher(data: dict, db: Session = Depends(get_db)):
+    teacher = models.Teacher(
+        name=data["name"],
+        email=data["email"],
+        course=data["course"],
+    )
+    db.add(teacher)
+    db.commit()
+    db.refresh(teacher)
+
+    return {"id": teacher.id}
+
+@app.get("/api/teachers")
+def get_teachers(db: Session = Depends(get_db)):
+    teachers = db.query(models.Teacher).all()
+
+    return [
+        {
+            "id": t.id,
+            "name": t.name,
+            "course": t.course,
+        }
+        for t in teachers
+    ]
+
+@app.delete("/api/teachers/{teacher_id}")
+def delete_teacher(teacher_id: int, db: Session = Depends(get_db)):
+    teacher = db.query(models.Teacher).filter(models.Teacher.id == teacher_id).first()
+
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    db.delete(teacher)
+    db.commit()
+
+    return {"message": "Teacher deleted successfully"}
+
+@app.post("/api/teachers/{teacher_id}/availability")
+def set_availability(teacher_id: int, data: list = Body(...), db: Session = Depends(get_db)):
+
+    db.query(models.Availability).filter(models.Availability.teacher_id == teacher_id).delete()
+
+    for slot in data:
+        availability = models.Availability(
+            teacher_id=teacher_id,
+            day_of_week=slot["day"],
+            start_time=slot["start"],
+            end_time=slot["end"]
+        )
+        db.add(availability)
+    db.commit()
+
+    return {"message": "Availability updated" }
+
+@app.get("/api/teachers/{teacher_id}/availability")
+def get_availability(teacher_id: int, db: Session = Depends(get_db)):
+    slots = db.query(models.Availability).filter(models.Availability.teacher_id == teacher_id).all()
+    return [
+        {
+            "day": a.day_of_week,
+            "start": a.start_time,
+            "end": a.end_time
+        }
+        for a in slots
+    ]

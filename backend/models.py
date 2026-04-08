@@ -1,3 +1,5 @@
+import email
+import string
 from sqlalchemy import (
     Column, BigInteger, String, Text, Enum, DateTime, Date,
     Time, Boolean, Numeric, SmallInteger, Integer, ForeignKey, UniqueConstraint
@@ -84,15 +86,7 @@ class User(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
-class Teacher(Base):
-    __tablename__ = "teachers"
-    id = Column(BigInteger, primary_key=True, index=True)
-    name = Column(String)
-    bio = Column(Text)
-    photo_url = Column(String)
-    email = Column(String)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
 
 class HourPackage(Base):
     __tablename__ = "hour_packages"
@@ -232,3 +226,25 @@ class Student(Base):
     course = Column(String)
     status = Column(String)
     notes = Column(Text)
+
+class Teacher(Base):
+    __tablename__ = "teachers"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String)
+    bio = Column(Text)
+    photo_url = Column(String)
+    email = Column(String)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    course = Column(String)
+
+
+class Availability(Base):
+    __tablename__ = "availability"
+
+    id = Column(Integer, primary_key=True, index=True)
+    teacher_id = Column(Integer, ForeignKey("teachers.id"))
+    day_of_week = Column(String)  
+    start_time = Column(String)    
+    end_time = Column(String)      
+    is_available = Column(Boolean, default=True)

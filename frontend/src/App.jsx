@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/Admin/AdminDashboard/AdminDashboard";
 import StudentDashboard from "./pages/Student/StudentDashboard/StudentDashboard";
 import StudentDetails from "./pages/Student/StudentDetails/StudentDetails";
 import CreateStudent from "./pages/student/CreateStudent/CreateStudent";
+import CreateTeacher from "./pages/Admin/CreateTeacher/CreateTeacher";
 
 function ScrollToTopOnRouteChange() {
   const { pathname } = useLocation();
@@ -44,7 +45,8 @@ function App() {
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/student-dashboard" element={<StudentDashboard />} />
           <Route path="/student-details/:id" element={<StudentDetails />} />
-          <Route path="/create-student" element={<CreateStudent /> } />
+          <Route path="/create-student" element={<CreateStudent />} />
+          <Route path="/create-teacher" element={<CreateTeacher />} />
         </Route>
       </Routes>
     </>

@@ -1,16 +1,15 @@
 {
   "ExpandedNodes": [
     "",
-    "\\backend",
-    "\\backend\\Services",
     "\\frontend",
     "\\frontend\\src",
     "\\frontend\\src\\pages",
-    "\\frontend\\src\\pages\\auth",
-    "\\frontend\\src\\pages\\auth\\Login",
-    "\\frontend\\src\\pages\\public",
-    "\\frontend\\src\\pages\\public\\Payment",
-    "\\frontend\\src\\pages\\public\\Payment\\Payment"
+    "\\frontend\\src\\pages\\Admin",
+    "\\frontend\\src\\pages\\Admin\\AdminDashboard",
+    "\\frontend\\src\\pages\\Admin\\CreateTeacher",
+    "\\frontend\\src\\pages\\Admin\\TeacherAvailability",
+    "\\frontend\\src\\pages\\Student",
+    "\\frontend\\src\\pages\\Student\\CreateStudent"
   ],
   "SelectedNode": "\\backend\\main.py",
   "PreviewInSolutionExplorer": false
