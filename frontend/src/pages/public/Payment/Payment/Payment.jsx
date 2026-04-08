@@ -4,7 +4,6 @@ import Select from "react-select";
 import countryList from "react-select-country-list";
 import { CreditCard } from "lucide-react";
 import { FaPaypal } from "react-icons/fa";
-import { getCurrentUser } from "../../../../utils/auth";
 
 export default function Payment() {
   const countryOptions = useMemo(() => countryList().getData(), []);
