@@ -5,6 +5,7 @@ from fastapi import BackgroundTasks, APIRouter
 from services.email_service import send_email
 from sqlalchemy.orm import Session
 from fastapi import Body
+from sqlalchemy.sql import func
 
 from database import SessionLocal, engine
 #from flask import Flask, request, jsonify
@@ -209,12 +210,32 @@ def seed_students(db: Session = Depends(get_db)):
 
     return {"message": "Seeded successfully"}
 
-@app.get("/api/students/{id}")
-def get_student(id: int, db: Session = Depends(get_db)):
-    student = db.query(models.Student).filter(models.Student.id == id).first()
+@app.get("/api/students/{student_id}")
+def get_student(student_id: int, db: Session = Depends(get_db)):
 
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
+    student = db.query(models.Student).filter(
+        models.Student.id == student_id
+    ).first()
+
+    bookings = db.query(models.ClassBooking).filter(
+        models.ClassBooking.student_id == student_id
+    ).all()
+
+    result = []
+
+    for b in bookings:
+        availability = db.query(models.Availability).filter(
+            models.Availability.id == b.availability_id
+        ).first()
+
+        result.append({
+            "id": b.id,
+            "status": b.status,
+            "day": availability.day_of_week,
+            "start": availability.start_time,
+            "end": availability.end_time,
+            "teacherId": availability.teacher_id
+        })
 
     return {
         "id": student.id,
@@ -223,7 +244,8 @@ def get_student(id: int, db: Session = Depends(get_db)):
         "phone": student.phone,
         "course": student.course,
         "status": student.status,
-        "notes": student.notes
+        "notes": student.notes,
+        "bookings": result
     }
 
 
@@ -349,4 +371,66 @@ def get_availability(teacher_id: int, db: Session = Depends(get_db)):
             "end": a.end_time
         }
         for a in slots
+    ]
+
+@app.get("/api/teachers/{teacher_id}/available-slots")
+def get_available_slots(teacher_id: int, db: Session = Depends(get_db)):
+    slots = db.query(models.Availability).filter(
+        models.Availability.teacher_id == teacher_id,
+        models.Availability.is_available == True
+    ).all()
+
+    return [
+        {
+            "id": s.id,
+            "day": s.day_of_week,
+            "start": s.start_time,
+            "end": s.end_time
+        }
+        for s in slots
+    ]
+
+@app.post("/api/bookings")
+def create_booking(data: dict, db: Session = Depends(get_db)):
+    student_id = data["studentId"]
+    teacher_id = data["teacherId"]
+    slots = data["slots"]
+
+    for slot in slots:
+        availability = db.query(models.Availability).filter(
+            models.Availability.id == slot["id"],
+            models.Availability.is_available == True
+        ).first()
+
+        if not availability:
+            raise HTTPException(status_code=400, detail="Slot not available")
+
+        availability.is_available = False
+
+        booking = models.ClassBooking(
+            student_id=student_id,
+            availability_id=availability.id,
+            status="scheduled",
+            booked_at=func.now()
+        )
+
+        db.add(booking)
+
+    db.commit()
+
+    return {"message": "Classes booked"}
+
+@app.get("/api/teachers/by_course/{course}")
+def get_teachers_by_course(course: str, db: Session = Depends(get_db)):
+    teachers = db.query(models.Teacher).filter(
+        models.Teacher.course == course
+    ).all()
+
+    return [
+        {
+            "id": t.id,
+            "name": t.name,
+            "course": t.course
+        }
+        for t in teachers
     ]

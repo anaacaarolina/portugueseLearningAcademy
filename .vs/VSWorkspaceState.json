@@ -1,11 +1,11 @@
 {
   "ExpandedNodes": [
     "",
+    "\\backend",
     "\\frontend",
     "\\frontend\\src",
     "\\frontend\\src\\pages",
     "\\frontend\\src\\pages\\Admin",
-    "\\frontend\\src\\pages\\Admin\\AdminDashboard",
     "\\frontend\\src\\pages\\Admin\\CreateTeacher",
     "\\frontend\\src\\pages\\Admin\\TeacherAvailability",
     "\\frontend\\src\\pages\\Student",

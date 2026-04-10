@@ -4,6 +4,12 @@ import { useNavigate } from "react-router-dom";
 export default function CreateTeacher() {
     const navigate = useNavigate();
 
+    const courses = [
+        "Beginner A1-A2",
+        "Intermediate B1",
+        "Business Portuguese"
+    ];
+
     const [form, setForm] = useState({
         name: "",
         email: "",
@@ -23,9 +29,7 @@ export default function CreateTeacher() {
         try {
             const res = await fetch("/api/teachers", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(form)
             });
 
@@ -68,12 +72,18 @@ export default function CreateTeacher() {
 
                 <div>
                     <label>Course</label>
-                    <input
+                    <select
                         name="course"
                         value={form.course}
                         onChange={handleChange}
-                        required
-                    />
+                    >
+                        <option value="">Select course</option>
+                        {courses.map((course) => (
+                            <option key={course} value={course}>
+                                {course}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <button type="submit">

@@ -41,7 +41,16 @@ export default function CreateStudent() {
                 <input name="name" placeholder="Name" onChange={handleChange} required />
                 <input name="email" placeholder="Email" onChange={handleChange} required />
                 <input name="phone" placeholder="Phone" onChange={handleChange} required />
-                <input name="course" placeholder="Course" onChange={handleChange} required />
+                <select
+                    name="course"
+                    value={form.course}
+                    onChange={handleChange}
+                >
+                    <option value="">Select course</option>
+                    <option value="Beginner A1-A2">Beginner A1-A2</option>
+                    <option value="Intermediate B1">Intermediate B1</option>
+                    <option value="Business Portuguese">Business Portuguese</option>
+                </select>
 
                 <select name="status" onChange={handleChange}>
                     <option>Active</option>

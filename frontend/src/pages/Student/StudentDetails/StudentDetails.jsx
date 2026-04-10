@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./StudentDetails.css";
 
@@ -6,6 +6,8 @@ export default function StudentDetails() {
 
     const { id } = useParams(); // dynamic route
     const navigate = useNavigate();
+
+    
 
     const [student, setStudent] = useState(null);
     const [notes, setNotes] = useState("");
@@ -75,7 +77,16 @@ export default function StudentDetails() {
                 <p><strong>Course:</strong> {student.course}</p>
                 <p><strong>Status:</strong> {student.status}</p>
             </div>
-
+            <div className="student-classes">
+                <h3>Booked classes</h3>
+                {student.bookings.map((b) => (
+                    <div key={b.id} className="booking-card">
+                        <div><strong>{b.day}</strong></div>
+                        <div>{b.start} → {b.end}</div>
+                        <div>Status: {b.status}</div>
+                    </div>
+                ))}
+            </div>
             <div className="student-notes">
                 <h3>Admin Notes</h3>
 

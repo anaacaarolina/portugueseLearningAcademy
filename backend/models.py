@@ -205,8 +205,8 @@ class TeacherAvailability(Base):
 
 class ClassBooking(Base):
     __tablename__ = "class_bookings"
-    id = Column(BigInteger, primary_key=True, index=True)
-    enrollment_id = Column(BigInteger, ForeignKey("enrollments.id"))
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("students.id"))
     availability_id = Column(BigInteger, ForeignKey("teacher_availability.id"))
     status = Column(Enum(BookingStatus), default=BookingStatus.scheduled)
     hours_deducted = Column(Numeric(5, 1))
