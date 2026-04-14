@@ -145,7 +145,7 @@
     margin-right: 0.35rem;
   }
 
-  .navbar .navbar-menu .navbar-nav .nav-item:nth-child(-n + 5) {
+  .navbar .navbar-menu .navbar-nav .nav-item:nth-child(-n + 4) {
     border-bottom: 1px solid var(--off-white);
     padding-bottom: 0.25rem;
   }

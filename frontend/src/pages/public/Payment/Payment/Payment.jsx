@@ -45,6 +45,19 @@ export default function Payment() {
     }));
   };
 
+    const handlePayment = async () => {
+        const user = getCurrentUser();
+
+        await fetch("/api/payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                userId: user.id,
+                amount: total,
+            }),
+        });
+    };
+
   return (
     <section className="payment">
       <header className="payment-header">

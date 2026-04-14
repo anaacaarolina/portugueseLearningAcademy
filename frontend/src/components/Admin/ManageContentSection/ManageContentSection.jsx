@@ -5,6 +5,7 @@ import HourPackageForm from "./Forms/HourPackageForm";
 import FunFactForm from "./Forms/FunFactForm";
 import FunFactTagForm from "./Forms/FunFactTagForm";
 import CommentForm from "./Forms/CommentForm";
+
 import "./ManageContentSection.css";
 
 const mockEntriesByGroup = {

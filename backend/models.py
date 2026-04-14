@@ -1,10 +1,12 @@
-from sqlalchemy import (Column, BigInteger, String, Text, Enum, DateTime, Date,
-    Time, Boolean, Numeric, SmallInteger, Integer, ForeignKey, UniqueConstraint)
+from sqlalchemy import (
+    Column, BigInteger, String, Text, Enum, DateTime, Date,
+    Time, Boolean, Numeric, SmallInteger, Integer, ForeignKey, UniqueConstraint
+)
 from sqlalchemy.sql import func
 from database import Base
+
 import enum
 
-# --- Enum Types ---
 
 class UserRole(str, enum.Enum):
     student = "student"
@@ -67,18 +69,15 @@ class BookingStatus(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
     id = Column(BigInteger, primary_key=True, index=True)
-    full_name = Column(String)
     name = Column(String)
     email = Column(String, unique=True)
     phone = Column(String)
-    hashed_password = Column(String)
     password = Column(String)
     google_id = Column(String)
     facebook_id = Column(String)
     apple_id = Column(String)
     email_verified_at = Column(DateTime)
     role = Column(Enum(UserRole))
-    is_active = Column(Boolean, default=True)
     street = Column(String)
     city = Column(String)
     postal_code = Column(String)
@@ -87,15 +86,6 @@ class User(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
-class Teacher(Base):
-    __tablename__ = "teachers"
-    id = Column(BigInteger, primary_key=True, index=True)
-    name = Column(String)
-    bio = Column(Text)
-    photo_url = Column(String)
-    email = Column(String)
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 class HourPackage(Base):
     __tablename__ = "hour_packages"
@@ -215,14 +205,49 @@ class TeacherAvailability(Base):
 
 class ClassBooking(Base):
     __tablename__ = "class_bookings"
-    id = Column(BigInteger, primary_key=True, index=True)
-    enrollment_id = Column(BigInteger, ForeignKey("enrollments.id"))
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("students.id"))
     availability_id = Column(BigInteger, ForeignKey("teacher_availability.id"))
     status = Column(Enum(BookingStatus), default=BookingStatus.scheduled)
     hours_deducted = Column(Numeric(5, 1))
     booked_at = Column(DateTime)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+
+class Student(Base):
+    __tablename__ = "students"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    email = Column(String, unique=True)
+    phone = Column(String)
+    course = Column(String)
+    status = Column(String)
+    notes = Column(Text)
+
+class Teacher(Base):
+    __tablename__ = "teachers"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String)
+    bio = Column(Text)
+    photo_url = Column(String)
+    email = Column(String)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    course = Column(String)
+
+
+class Availability(Base):
+    __tablename__ = "availability"
+
+    id = Column(Integer, primary_key=True, index=True)
+    teacher_id = Column(Integer, ForeignKey("teachers.id"))
+    day_of_week = Column(String)
+    start_time = Column(String)
+    end_time = Column(String)
+    is_available = Column(Boolean, default=True)
+
     
 class FunFactTag(Base):
     __tablename__ = "fun_fact_tags"
@@ -248,7 +273,7 @@ class FunFact(Base):
 class Comment(Base):
     __tablename__ = "comments"
     id          = Column(BigInteger, primary_key=True, index=True)
-    author      = Column (String, nullable=False)
+    author      = Column(String, nullable=False)
     rating      = Column(SmallInteger, nullable=False)
     status      = Column(Enum(CommentStatus), default=CommentStatus.pending)
     body        = Column(Text, nullable=False)
