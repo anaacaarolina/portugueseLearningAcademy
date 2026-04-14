@@ -95,6 +95,12 @@
   gap: 1rem;
 }
 
+.enrollment-status-message {
+  margin: 0;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
 .enrollment-buy-button {
   display: block;
   margin: 1rem auto 0 auto;
@@ -112,6 +118,11 @@
 
 .enrollment-buy-button:hover {
   background-color: var(--light-blue);
+}
+
+.enrollment-buy-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 @media (min-width: 700px) {

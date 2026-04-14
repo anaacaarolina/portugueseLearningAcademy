@@ -63,6 +63,15 @@
   grid-template-columns: 1fr;
 }
 
+.fun-facts-status-message {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 10px;
+  background-color: white;
+  color: var(--dark-blue);
+  text-align: center;
+}
+
 .fun-facts-empty-state {
   padding-top: 0 !important;
   text-align: center;

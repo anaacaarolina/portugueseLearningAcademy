@@ -35,7 +35,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(
             status_code=400,
-            detail="Este email já está registado."
+            detail="This email is already registered."
         )
 
     hashed_pwd = get_password_hash(user_data.password)
@@ -59,7 +59,6 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         insert_values["hashed_password"] = hashed_pwd
 
     if "password" in columns:
-        # Keep compatibility with older schema where `password` is the stored credential field.
         insert_columns.append("password")
         insert_values["password"] = hashed_pwd
 
@@ -98,13 +97,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     if stored_hash:
         password_valid = verify_password(form_data.password, stored_hash)
         if not password_valid:
-            # Backward compatibility for any legacy plain-text rows.
             password_valid = stored_hash == form_data.password
 
     if not user or not password_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email ou password incorretos",
+            detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

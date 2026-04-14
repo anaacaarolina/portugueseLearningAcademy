@@ -41,6 +41,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/fun-fact" element={<FunFact />} />
           <Route path="/fun-facts" element={<FunFacts />} />
+          <Route path="/fun-facts/:slug" element={<FunFact />} />
 
           <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
             <Route path="/admin-dashboard" element={<AdminDashboard />} />

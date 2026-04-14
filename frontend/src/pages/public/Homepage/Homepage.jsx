@@ -1,5 +1,5 @@
 import "./Homepage.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PortugueseFlag from "../../../assets/portuguese_flag.webp";
 import Button from "../../../components/Button/Button";
 import HomepageCourseCard from "../../../components/Homepage/HomepageCourseCard/HomepageCourseCard";
@@ -9,7 +9,93 @@ import HomepageTestimonailCard from "../../../components/Homepage/HomepageTestim
 import Select from "react-select";
 
 export default function Homepage() {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
   const [courseType, setCourseType] = useState("group");
+  const [testimonials, setTestimonials] = useState([]);
+  const [isTestimonialsLoading, setIsTestimonialsLoading] = useState(true);
+  const [testimonialsError, setTestimonialsError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const formatRelativeDate = (dateString) => {
+      if (!dateString) {
+        return "Recently";
+      }
+
+      const createdAt = new Date(dateString);
+      if (Number.isNaN(createdAt.getTime())) {
+        return "Recently";
+      }
+
+      const now = new Date();
+      const diffInMs = createdAt.getTime() - now.getTime();
+      const diffInDays = Math.round(diffInMs / (1000 * 60 * 60 * 24));
+
+      if (Math.abs(diffInDays) < 1) {
+        return "Today";
+      }
+
+      if (Math.abs(diffInDays) < 30) {
+        return `${Math.abs(diffInDays)} day${Math.abs(diffInDays) === 1 ? "" : "s"} ago`;
+      }
+
+      const diffInMonths = Math.round(Math.abs(diffInDays) / 30);
+      return `${diffInMonths} month${diffInMonths === 1 ? "" : "s"} ago`;
+    };
+
+    const loadComments = async () => {
+      setIsTestimonialsLoading(true);
+      setTestimonialsError("");
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/comments`);
+
+        if (!response.ok) {
+          throw new Error("Unable to load comments");
+        }
+
+        const commentsData = await response.json();
+        if (!isMounted) {
+          return;
+        }
+
+        const safeComments = Array.isArray(commentsData) ? commentsData : [];
+        const publishedComments = safeComments
+          .filter((comment) => comment?.status === "published")
+          .sort((a, b) => {
+            const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
+            const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+            return bTime - aTime;
+          })
+          .slice(0, 3)
+          .map((comment) => ({
+            id: comment.id,
+            rating: comment.rating,
+            comment: comment.body,
+            name: comment.author,
+            date: formatRelativeDate(comment.created_at),
+          }));
+
+        setTestimonials(publishedComments);
+      } catch {
+        if (isMounted) {
+          setTestimonials([]);
+          setTestimonialsError("Could not load testimonials from the API.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsTestimonialsLoading(false);
+        }
+      }
+    };
+
+    loadComments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [apiBaseUrl]);
 
   const courseOptions = [
     { value: "group", label: "Group Courses" },
@@ -111,30 +197,6 @@ export default function Homepage() {
     },
   ];
 
-  const testimonials = [
-    {
-      id: 1,
-      rating: 4,
-      comment: "Great location and flexible schedyles. The group classes are fun and very effective for learning",
-      name: "Ana Costa",
-      date: "3 weeks ago",
-    },
-    {
-      id: 2,
-      rating: 5,
-      comment: "The personalized approach really made a differce. The teachers genuinely care about your progress",
-      name: "João Santos",
-      date: "1 month ago",
-    },
-    {
-      id: 3,
-      rating: 5,
-      comment: "Excellent teachers and a welcoming environment! I improved my Portuguese significantly in just a few months.",
-      name: "Maria Silva",
-      date: "2 months ago",
-    },
-  ];
-
   return (
     <div className="homepage">
       <section className="hero-section">
@@ -181,9 +243,10 @@ export default function Homepage() {
       <section className="testimonials-section">
         <h2>What Our Students Say</h2>
         <div className="testimonial-cards-grid">
-          {testimonials.map((testimonial) => (
-            <HomepageTestimonailCard key={testimonial.id} rating={testimonial.rating} comment={testimonial.comment} name={testimonial.name} date={testimonial.date} />
-          ))}
+          {isTestimonialsLoading ? <p>Loading testimonials...</p> : null}
+          {!isTestimonialsLoading && testimonialsError ? <p>{testimonialsError}</p> : null}
+          {!isTestimonialsLoading && !testimonialsError && testimonials.length === 0 ? <p>No published testimonials yet.</p> : null}
+          {!isTestimonialsLoading && !testimonialsError ? testimonials.map((testimonial) => <HomepageTestimonailCard key={testimonial.id} rating={testimonial.rating} comment={testimonial.comment} name={testimonial.name} date={testimonial.date} />) : null}
         </div>
       </section>
     </div>
