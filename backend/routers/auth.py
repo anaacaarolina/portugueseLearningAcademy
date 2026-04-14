@@ -5,7 +5,7 @@ from database import get_db
 from models import UserRole
 from schemas import UserCreate, UserResponse, Token
 from fastapi.security import OAuth2PasswordRequestForm
-from services.auth_services import get_password_hash, verify_password, create_access_token
+from Services.auth_services import get_password_hash, verify_password, create_access_token
 
 router = APIRouter()
 

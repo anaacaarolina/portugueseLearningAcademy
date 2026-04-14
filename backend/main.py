@@ -5,7 +5,6 @@ from sqlalchemy.sql import func
 from sqlalchemy import inspect, text
 
 from database import SessionLocal, engine
-from services.email_service import send_email
 import models
 from routers.auth import router as auth_router
 from routers.courses import router as courses_router

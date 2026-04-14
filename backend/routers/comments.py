@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Comment
-from schema import CommentCreate, CommentResponse, CommentUpdate
+from schemas import CommentCreate, CommentResponse, CommentUpdate
 
 router = APIRouter()
 

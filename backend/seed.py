@@ -5,8 +5,9 @@ from decimal import Decimal
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+import sqlalchemy as sa
 from database import SessionLocal, engine, Base
-from services.auth_services import get_password_hash
+from Services.auth_services import get_password_hash
 from models import (
     User, Teacher, HourPackage, Course, CourseSchedule,
     Enrollment, PreEnrollment, Waitlist, Payment, HourTransfer,
@@ -21,7 +22,24 @@ def hash_password(plain: str) -> str:
     return get_password_hash(plain)
 
 
+def ensure_schema():
+    """Ensure database schema is correct by adding missing columns if needed."""
+    with engine.connect() as conn:
+        # Check if course column exists in teachers table
+        inspector = sa.inspect(conn)
+        columns = [col['name'] for col in inspector.get_columns('teachers')]
+        
+        if 'course' not in columns:
+            print("Adding course column to teachers table...")
+            conn.execute(sa.text("ALTER TABLE teachers ADD COLUMN course VARCHAR"))
+            conn.commit()
+            print("✓ course column added successfully")
+
+
 def run():
+    # Ensure schema is up to date before seeding
+    ensure_schema()
+    
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 

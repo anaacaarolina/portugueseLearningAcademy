@@ -1,5 +1,5 @@
-from services.notification_type import NotificationType
-from services.email_template import (
+from Services.notification_type import NotificationType
+from Services.email_template import (
     registration_email,
     enrollment_email,
     waitlist_email,
@@ -7,7 +7,7 @@ from services.email_template import (
     activity_email,
     verification_email
 )
-from services.email_service import send_email
+from Services.email_service import send_email
 
 def send_notification_email(notification_type: NotificationType, to: str, data:dict):
     if notification_type == NotificationType.REGISTRATION:

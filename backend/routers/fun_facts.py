@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import FunFact, FunFactTag
-from schema import FunFactCreate, FunFactResponse, FunFactUpdate
+from schemas import FunFactCreate, FunFactResponse, FunFactUpdate
 
 router = APIRouter()
 
