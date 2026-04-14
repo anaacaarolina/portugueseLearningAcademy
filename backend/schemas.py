@@ -6,7 +6,7 @@ from models import (
     UserRole, CourseLevel, CourseType, CourseRegime, CourseStatus,
     DayOfWeek, WaitlistStatus, PaymentStatus, PaymentType,
     EnrollmentStatus, PreEnrollmentStatus, NotificationChannel,
-    NotificationStatus, BookingStatus
+    NotificationStatus, BookingStatus, CommentStatus
 )
 
 # ─────────────────────────────────────────
@@ -43,6 +43,19 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user_role: str
+    has_active_enrollment: bool
+
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
+
 # ─────────────────────────────────────────
 # TEACHERS
 # ─────────────────────────────────────────
@@ -78,6 +91,7 @@ class HourPackageBase(BaseModel):
     price: Optional[Decimal] = None
     is_trial: Optional[bool] = False
     is_active: Optional[bool] = True
+    is_popular: Optional[bool] = False
 
 class HourPackageCreate(HourPackageBase):
     name: str
@@ -88,6 +102,35 @@ class HourPackageUpdate(HourPackageBase):
     pass
 
 class HourPackageResponse(HourPackageBase):
+    id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+# ─────────────────────────────────────────
+# COMMENTS
+# ─────────────────────────────────────────
+
+class CommentBase(BaseModel):
+    author: Optional[str] = None
+    rating: Optional[int] = None
+    status: Optional[CommentStatus] = CommentStatus.pending
+    body: Optional[str] = None
+
+
+class CommentCreate(CommentBase):
+    author: str
+    rating: int
+    body: str
+
+
+class CommentUpdate(CommentBase):
+    pass
+
+
+class CommentResponse(CommentBase):
     id: int
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -359,6 +402,63 @@ class ClassBookingUpdate(ClassBookingBase):
     pass
 
 class ClassBookingResponse(ClassBookingBase):
+    id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+# ─────────────────────────────────────────
+# FUN FACTS
+# ─────────────────────────────────────────
+
+class FunFactBase(BaseModel):
+    title: Optional[str] = None
+    slug: Optional[str] = None
+    tag_id: Optional[int] = None
+    body: Optional[str] = None
+    key_points: Optional[str] = None
+    did_you_know: Optional[str] = None
+    image_url: Optional[str] = None
+    is_published: Optional[bool] = False
+
+class FunFactCreate(FunFactBase):
+    title: str
+    slug: str
+    tag_id: int
+    body: str
+    key_points: str
+
+class FunFactUpdate(FunFactBase):
+    title: str
+    slug: str
+    tag_id: int
+    body: str
+    key_points: str
+
+class FunFactResponse(FunFactBase):
+    id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+# ─────────────────────────────────────────
+# FUN FACT TAGS
+# ─────────────────────────────────────────
+
+class FunFactTagBase(BaseModel):
+    name: Optional[str] = None
+
+class FunFactTagCreate(FunFactTagBase):
+    name: str
+
+class FunFactTagUpdate(FunFactTagBase):
+    name: str
+
+class FunFactTagResponse(FunFactTagBase):
     id: int
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

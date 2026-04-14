@@ -1,168 +1,53 @@
-from zoneinfo import available_timezones
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, APIRouter, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import BackgroundTasks, APIRouter
-from services.email_service import send_email
 from sqlalchemy.orm import Session
-from fastapi import Body
 from sqlalchemy.sql import func
+from sqlalchemy import inspect, text
 
 from database import SessionLocal, engine
-#from flask import Flask, request, jsonify
+from services.email_service import send_email
 import models
-
-
-models.Base.metadata.create_all(bind=engine)
-
-app = FastAPI()
-#app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///students.db"
-#app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-#db.init_app(app)
-
-
-
-import models
-
-models.Base.metadata.create_all(bind=engine)
-
-
-router = APIRouter()
-
-@router.post("/api/register")
-def register(user: dict, background_tasks: BackgroundTasks):
-
-    background_tasks.add_task(
-        send_notification,
-        NotificationType.REGISTRATION,
-        user["email"],
-        {"name": user["fullName"]}
-    )
-
-    return {"message": "User registered"}
-
-app.include_router(router)
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-@app.post("/api/payment")
-def payment(data: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-
-    user = db.query(models.User).filter(models.User.id == data["userId"]).first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    background_tasks.add_task(
-        send_notification,
-        NotificationType.PAYMENT,
-        user.email,
-        {
-            "name": user.name,
-            "amount": data["amount"]
-        }
-    )
-
-    return {"message": "Payment successful"}
-
-@router.post("/api/enroll")
-def enroll(data: dict, background_tasks: BackgroundTasks):
-
-    background_tasks.add_task(
-        send_notification,
-        NotificationType.ENROLLMENT,
-        data["email"],
-        {
-            "name": data["name"],
-            "course": data["course"]
-        }
-    )
-
-    return {"message": "Enrolled"}
-
-@router.post("/api/waitlist")
-def waitlist(data: dict, background_tasks: BackgroundTasks):
-
-    background_tasks.add_task(
-        send_notification,
-        NotificationType.WAITLIST,
-        data["email"],
-        {"name": data["name"]}
-    )
-
-    return {"message": "Added to waitlist"}
+from routers.auth import router as auth_router
+from routers.courses import router as courses_router
+from routers.comments import router as comments_router
+from routers.fun_facts import router as fun_facts_router
+from routers.fun_fact_tags import router as fun_fact_tags_router
+from routers.hour_packages import router as hour_packages_router
 
 import uuid
 
-@router.post("/api/send-verification")
-def send_verification(email: str, background_tasks: BackgroundTasks):
-    # stores token in DB
-    token = str(uuid.uuid4())
+models.Base.metadata.create_all(bind=engine)
 
-    
-
-    background_tasks.add_task(
-        send_notification,
-        NotificationType.EMAIL_VERIFICATION,
-        email,
-        {"token": token}
-    )
-
-    return {"message": "Verification sent"}
-
-@router.post("/api/notify")
-def notify(data: dict, background_tasks: BackgroundTasks):
-
-    background_tasks.add_task(
-        send_notification,
-        NotificationType.ACTIVITY,
-        data["email"],
-        {"message": data["message"]}
-    )
-
-    return {"message": "Notification sent"}
-
-
-@app.post("/api/login")
-def login(data: dict, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == data["email"]).first()
-
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    # (skip password hashing for now)
-
-    return {
-        "id": user.id,
-        "email": user.email,
-        "name": user.name
-    }
-
+app = FastAPI(title="Portuguese Academy API")
 
 origins = [
-    "http://localhost:5173",  # Vite default
-    "http://localhost:3000",  # If using CRA
+    "http://localhost:5173",
+    "http://localhost:3000",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(auth_router, prefix="/auth", tags=["Autenticação"])
+app.include_router(courses_router, prefix="/courses", tags=["Cursos"])
+app.include_router(comments_router, prefix="/comments", tags=["Comments"])
+app.include_router(fun_facts_router, prefix="/fun-facts", tags=["Fun Facts"])
+app.include_router(fun_fact_tags_router, prefix="/fun-fact-tags", tags=["Fun Fact Tags"])
+app.include_router(hour_packages_router, prefix="/hour-packages", tags=["Hour Packages"])
+
+
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
 
 @app.get("/")
 def root():
@@ -171,11 +56,6 @@ def root():
 @app.get("/api/test")
 def test():
     return {"data": "Hello from FastAPI"}
-
-#if __name__ == "__main__":
-    #with app.app_context():
-        #db.create_all()
-    #app.run(debug=True)
 
 @app.get("/api/debug/seed")
 def seed_students(db: Session = Depends(get_db)):
@@ -359,7 +239,7 @@ def set_availability(teacher_id: int, data: list = Body(...), db: Session = Depe
         db.add(availability)
     db.commit()
 
-    return {"message": "Availability updated" }
+    return {"message": "Availability updated"}
 
 @app.get("/api/teachers/{teacher_id}/availability")
 def get_availability(teacher_id: int, db: Session = Depends(get_db)):

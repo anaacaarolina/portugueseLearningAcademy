@@ -1,12 +1,17 @@
 import "./Header.css";
 import logo from "../../assets/logo.webp";
 import { User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { clearStoredAuth, getDashboardPathByRole, getStoredAuth } from "../../utils/auth";
 import "../Button/Button.css";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const { isAuthenticated, role } = getStoredAuth();
+  const dashboardPath = getDashboardPathByRole(role);
 
   const handleToggleMenu = () => {
     setIsMenuOpen((prevState) => !prevState);
@@ -14,6 +19,12 @@ export default function Header() {
 
   const closeMenu = () => {
     setIsMenuOpen(false);
+  };
+
+  const handleLogout = () => {
+    clearStoredAuth();
+    closeMenu();
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -41,20 +52,38 @@ export default function Header() {
                 Fun Facts
               </Link>
             </li>
-            <li className="nav-item">
-              <Link to="/admin-dashboard" className="nav-link" onClick={closeMenu}>
-                Admin
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link to="/login" className="nav-link" onClick={closeMenu}>
-                <User className="nav-icon" size="1em" aria-hidden="true" />
-                <span>Login</span>
-              </Link>
-            </li>
-            <Link to="/register" className="button nav-item-button" onClick={closeMenu}>
-              Get Started
-            </Link>
+
+            {isAuthenticated && dashboardPath ? (
+              <li className="nav-item">
+                <Link to={dashboardPath} className="nav-link" onClick={closeMenu}>
+                  Dashboard
+                </Link>
+              </li>
+            ) : null}
+
+            {isAuthenticated ? (
+              <li className="nav-item">
+                <button type="button" className="nav-link nav-link-button" onClick={handleLogout}>
+                  <User className="nav-icon" size="1em" aria-hidden="true" />
+                  <span>Logout</span>
+                </button>
+              </li>
+            ) : (
+              <>
+                <li className="nav-item">
+                  <Link to="/login" className="nav-link" onClick={closeMenu}>
+                    <User className="nav-icon" size="1em" aria-hidden="true" />
+                    <span>Login</span>
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/register" className="button nav-item-button" onClick={closeMenu}>
+                    Get Started
+                  </Link>
+                </li>
+              </>
+            )}
+
           </ul>
         </div>
       </div>

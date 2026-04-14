@@ -110,6 +110,14 @@
   line-height: 1.5;
 }
 
+
+.admin-content-modal-feedback {
+  margin: 0.3rem 0 0.75rem !important;
+  color: var(--status-canceled-color);
+  font-weight: 700;
+}
+
+
 .admin-content-modal label {
   display: block;
   margin-top: 0.6rem;
@@ -134,6 +142,44 @@
   resize: vertical;
 }
 
+.admin-text-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.admin-text-toolbar button {
+  border: 1px solid rgba(34, 63, 89, 0.24);
+  border-radius: 999px;
+  background: white;
+  color: var(--dark-blue);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.24rem 0.62rem;
+  cursor: pointer;
+}
+
+.admin-text-toolbar button.is-active {
+  background-color: var(--light-blue);
+}
+
+.admin-text-editor-wrapper {
+  border: 1px solid var(--light-blue);
+  border-radius: 8px;
+  background: white;
+}
+
+.admin-text-editor .tiptap {
+  min-height: 130px;
+  padding: 0.6rem;
+  outline: none;
+}
+
+.admin-text-editor .tiptap p {
+  margin: 0;
+}
+
 .admin-content-form-section-title {
   margin-top: 0.95rem;
   margin-bottom: 0.4rem;
@@ -154,6 +200,79 @@
 
 .span-two-columns {
   grid-column: auto;
+}
+
+.admin-content-checkbox {
+  display: block;
+  position: relative;
+  padding-left: 2rem;
+  margin: 0.2rem 0 0.45rem;
+  font-size: 0.8rem;
+  color: var(--dark-blue);
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-content-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.admin-content-checkbox-checkmark {
+  position: absolute;
+  top: 0.02rem;
+  left: 0;
+  height: 1.3rem;
+  width: 1.3rem;
+  border: 2px solid var(--yellow);
+  border-radius: 5px;
+  background-color: white;
+  transition: var(--transition);
+}
+
+.admin-content-checkbox:hover input ~ .admin-content-checkbox-checkmark {
+  background-color: white;
+}
+
+.admin-content-checkbox input:focus-visible ~ .admin-content-checkbox-checkmark {
+  box-shadow: 0 0 0 3px var(--yellow);
+}
+
+.admin-content-checkbox input:checked ~ .admin-content-checkbox-checkmark {
+  background-color: var(--yellow);
+  border-color: var(--yellow);
+}
+
+.admin-content-checkbox-checkmark::after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.admin-content-checkbox input:checked ~ .admin-content-checkbox-checkmark::after {
+  display: block;
+}
+
+.admin-content-checkbox .admin-content-checkbox-checkmark::after {
+  left: 0.45rem;
+  top: 0.2rem;
+  width: 0.3rem;
+  height: 0.6rem;
+  border: solid var(--dark-blue);
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+
+.admin-content-checkbox-text {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  font-family: "Nunito Sans", sans-serif;
 }
 
 .admin-course-picker-buttons {

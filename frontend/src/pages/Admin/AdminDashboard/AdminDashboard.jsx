@@ -10,7 +10,7 @@ const kpis = [
   {
     id: 1,
     icon: Users,
-    value: "128",
+    value: "5",
     title: "Active Students",
   },
   {

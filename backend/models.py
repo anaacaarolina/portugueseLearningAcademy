@@ -1,12 +1,9 @@
-import email
-import string
 from sqlalchemy import (
     Column, BigInteger, String, Text, Enum, DateTime, Date,
     Time, Boolean, Numeric, SmallInteger, Integer, ForeignKey, UniqueConstraint
 )
 from sqlalchemy.sql import func
 from database import Base
-#from flask_sqlalchemy import SQLAlchemy
 
 import enum
 
@@ -52,6 +49,9 @@ class EnrollmentStatus(str, enum.Enum):
 
 class PreEnrollmentStatus(str, enum.Enum):
     pending = "pending"; converted = "converted"; cancelled = "cancelled"
+    
+class CommentStatus(str, enum.Enum):
+    pending = "pending"; published = "published"; hidden = "hidden"
 
 class NotificationChannel(str, enum.Enum):
     whatsapp = "whatsapp"; email = "email"
@@ -87,7 +87,6 @@ class User(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 
-
 class HourPackage(Base):
     __tablename__ = "hour_packages"
     id = Column(BigInteger, primary_key=True, index=True)
@@ -96,6 +95,7 @@ class HourPackage(Base):
     price = Column(Numeric(8, 2))
     is_trial = Column(Boolean)
     is_active = Column(Boolean)
+    is_popular = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -215,7 +215,6 @@ class ClassBooking(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 
-
 class Student(Base):
     __tablename__ = "students"
 
@@ -244,7 +243,39 @@ class Availability(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     teacher_id = Column(Integer, ForeignKey("teachers.id"))
-    day_of_week = Column(String)  
-    start_time = Column(String)    
-    end_time = Column(String)      
+    day_of_week = Column(String)
+    start_time = Column(String)
+    end_time = Column(String)
     is_available = Column(Boolean, default=True)
+
+    
+class FunFactTag(Base):
+    __tablename__ = "fun_fact_tags"
+    id         = Column(BigInteger, primary_key=True, index=True)
+    name       = Column(String, unique=True, nullable=False) 
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+class FunFact(Base):
+    __tablename__ = "fun_facts"
+    id                = Column(BigInteger, primary_key=True, index=True)
+    title             = Column(String, nullable=False)
+    slug              = Column(String, unique=True, nullable=False, index=True)
+    tag_id            = Column(BigInteger, ForeignKey("fun_fact_tags.id"), nullable=False)
+    body              = Column(Text, nullable=False)
+    key_points        = Column(Text, nullable=False, default=list)
+    did_you_know      = Column(Text, nullable=True)
+    image_url         = Column(String, nullable=True)
+    is_published      = Column(Boolean, default=False, nullable=False)
+    created_at        = Column(DateTime, default=func.now())
+    updated_at        = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+class Comment(Base):
+    __tablename__ = "comments"
+    id          = Column(BigInteger, primary_key=True, index=True)
+    author      = Column(String, nullable=False)
+    rating      = Column(SmallInteger, nullable=False)
+    status      = Column(Enum(CommentStatus), default=CommentStatus.pending)
+    body        = Column(Text, nullable=False)
+    created_at  = Column(DateTime, default=func.now())
+    updated_at  = Column(DateTime, default=func.now(), onupdate=func.now())

@@ -1,8 +1,12 @@
-import { useMemo, useState } from "react";
-import { X } from "lucide-react";
-import "./ManageContentSection.css";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Trash2, X } from "lucide-react";
+import CourseForm from "./Forms/CourseForm";
+import HourPackageForm from "./Forms/HourPackageForm";
+import FunFactForm from "./Forms/FunFactForm";
+import FunFactTagForm from "./Forms/FunFactTagForm";
+import CommentForm from "./Forms/CommentForm";
 
-const teachers = ["Professor Sofia Rodrigues", "Professor Tiago Almeida", "Professor Mariana Costa", "Professor Rui Fernandes"];
+import "./ManageContentSection.css";
 
 const mockEntriesByGroup = {
   courses: [
@@ -55,40 +59,23 @@ const mockEntriesByGroup = {
       content: "Portuguese has global presence across Europe, South America, Africa, and Asia.",
     },
   ],
+  "fun-fact-tags": [],
   "hour-packages": [
     {
       id: "package-1",
       name: "Starter Pack",
-      hours: 10,
-      price: 290,
-      validFor: "3 months",
-      format: "Individual",
-      notes: "Best for new students exploring private classes.",
+      hours: 10.0,
+      price: 290.0,
+      is_trial: false,
+      is_active: true,
     },
     {
       id: "package-2",
       name: "Pro Pack",
-      hours: 30,
-      price: 780,
-      validFor: "6 months",
-      format: "Individual",
-      notes: "Most popular for consistent progress.",
-    },
-  ],
-  comments: [
-    {
-      id: "comment-1",
-      author: "Ana Costa",
-      rating: 5,
-      status: "Published",
-      comment: "Great teachers and practical classes.",
-    },
-    {
-      id: "comment-2",
-      author: "Miguel Ferreira",
-      rating: 4,
-      status: "Pending",
-      comment: "Very good content and organization.",
+      hours: 30.0,
+      price: 780.0,
+      is_trial: false,
+      is_active: true,
     },
   ],
   enrollments: [
@@ -134,10 +121,143 @@ const mockEntriesByGroup = {
 };
 
 export default function ManageContentSection() {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
   const [activeModal, setActiveModal] = useState(null);
   const [selectedEntryByGroup, setSelectedEntryByGroup] = useState({});
   const [courseEditStep, setCourseEditStep] = useState("form");
   const [courseEditPickId, setCourseEditPickId] = useState("");
+  const [funFactEditStep, setFunFactEditStep] = useState("form");
+  const [funFactEditPickId, setFunFactEditPickId] = useState("");
+  const [hourPackageEditStep, setHourPackageEditStep] = useState("form");
+  const [hourPackageEditPickId, setHourPackageEditPickId] = useState("");
+  const [commentEditStep, setCommentEditStep] = useState("form");
+  const [commentEditPickId, setCommentEditPickId] = useState("");
+  const [funFactTags, setFunFactTags] = useState([]);
+  const [isFunFactTagLoading, setIsFunFactTagLoading] = useState(false);
+  const [isFunFactTagSaving, setIsFunFactTagSaving] = useState(false);
+  const [funFactTagFeedback, setFunFactTagFeedback] = useState("");
+  const [funFacts, setFunFacts] = useState([]);
+  const [isFunFactLoading, setIsFunFactLoading] = useState(false);
+  const [isFunFactSaving, setIsFunFactSaving] = useState(false);
+  const [funFactFeedback, setFunFactFeedback] = useState("");
+  const [hourPackages, setHourPackages] = useState([]);
+  const [isHourPackageLoading, setIsHourPackageLoading] = useState(false);
+  const [isHourPackageSaving, setIsHourPackageSaving] = useState(false);
+  const [hourPackageFeedback, setHourPackageFeedback] = useState("");
+  const [comments, setComments] = useState([]);
+  const [isCommentLoading, setIsCommentLoading] = useState(false);
+  const [isCommentSaving, setIsCommentSaving] = useState(false);
+  const [commentFeedback, setCommentFeedback] = useState("");
+
+  const loadFunFactTags = useCallback(async () => {
+    setIsFunFactTagLoading(true);
+    setFunFactTagFeedback("");
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/fun-fact-tags`);
+      if (!response.ok) {
+        throw new Error("Unable to load fun fact tags");
+      }
+
+      const tags = await response.json();
+      setFunFactTags(Array.isArray(tags) ? tags : []);
+    } catch {
+      setFunFactTagFeedback("Could not load fun fact tags from the API.");
+    } finally {
+      setIsFunFactTagLoading(false);
+    }
+  }, [apiBaseUrl]);
+
+  const loadFunFacts = useCallback(async () => {
+    setIsFunFactLoading(true);
+    setFunFactFeedback("");
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/fun-facts`);
+      if (!response.ok) {
+        throw new Error("Unable to load fun facts");
+      }
+
+      const facts = await response.json();
+      const sortedFacts = Array.isArray(facts)
+        ? [...facts].sort((a, b) => {
+            const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
+            const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+            return bTime - aTime;
+          })
+        : [];
+      setFunFacts(sortedFacts);
+    } catch {
+      setFunFactFeedback("Could not load fun facts from the API.");
+    } finally {
+      setIsFunFactLoading(false);
+    }
+  }, [apiBaseUrl]);
+
+  const loadHourPackages = useCallback(async () => {
+    setIsHourPackageLoading(true);
+    setHourPackageFeedback("");
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/hour-packages`);
+      if (!response.ok) {
+        throw new Error("Unable to load hour packages");
+      }
+
+      const packages = await response.json();
+      const sortedPackages = Array.isArray(packages)
+        ? [...packages].sort((a, b) => {
+            const aPopular = a?.is_popular ? 1 : 0;
+            const bPopular = b?.is_popular ? 1 : 0;
+            if (aPopular !== bPopular) {
+              return bPopular - aPopular;
+            }
+
+            const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
+            const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+            return bTime - aTime;
+          })
+        : [];
+      setHourPackages(sortedPackages);
+    } catch {
+      setHourPackageFeedback("Could not load hour packages from the API.");
+    } finally {
+      setIsHourPackageLoading(false);
+    }
+  }, [apiBaseUrl]);
+
+  const loadComments = useCallback(async () => {
+    setIsCommentLoading(true);
+    setCommentFeedback("");
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/comments`);
+      if (!response.ok) {
+        throw new Error("Unable to load comments");
+      }
+
+      const data = await response.json();
+      const sortedComments = Array.isArray(data)
+        ? [...data].sort((a, b) => {
+            const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
+            const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+            return bTime - aTime;
+          })
+        : [];
+      setComments(sortedComments);
+    } catch {
+      setCommentFeedback("Could not load comments from the API.");
+    } finally {
+      setIsCommentLoading(false);
+    }
+  }, [apiBaseUrl]);
+
+  useEffect(() => {
+    loadFunFactTags();
+    loadFunFacts();
+    loadHourPackages();
+    loadComments();
+  }, [loadComments, loadFunFactTags, loadFunFacts, loadHourPackages]);
 
   const contentGroups = useMemo(
     () => [
@@ -152,31 +272,27 @@ export default function ManageContentSection() {
         description: "Maintain educational facts and associated categories.",
       },
       {
+        id: "fun-fact-tags",
+        title: "Fun Fact Tags",
+        description: "Create and edit categories used to classify fun facts.",
+      },
+      {
         id: "hour-packages",
         title: "Hour Packages",
-        description: "Control package names, hours, and payment values.",
+        description: "Control package names, hours, pricing, and popularity.",
       },
       {
         id: "comments",
         title: "Comments",
         description: "Moderate testimonials and public website comments.",
       },
-      {
-        id: "enrollments",
-        title: "Enrollments",
-        description: "Track and update enrollment records and statuses.",
-      },
-      {
-        id: "homepage-content",
-        title: "Homepage Highlights",
-        description: "Adjust featured sections, testimonials, and calls to action.",
-      },
     ],
+    // TODO: ADD PROFESSOR
     [],
   );
 
   const activeGroup = activeModal ? contentGroups.find((group) => group.id === activeModal.groupId) : null;
-  const activeEntries = activeGroup ? (mockEntriesByGroup[activeGroup.id] ?? []) : [];
+  const activeEntries = activeGroup ? (activeGroup.id === "fun-fact-tags" ? funFactTags : activeGroup.id === "fun-facts" ? funFacts : activeGroup.id === "hour-packages" ? hourPackages : activeGroup.id === "comments" ? comments : (mockEntriesByGroup[activeGroup.id] ?? [])) : [];
   const selectedEntryId = activeGroup ? (selectedEntryByGroup[activeGroup.id] ?? activeEntries[0]?.id ?? "") : "";
   const selectedEntry = activeEntries.find((entry) => entry.id === selectedEntryId);
 
@@ -184,117 +300,331 @@ export default function ManageContentSection() {
     setActiveModal(null);
     setCourseEditStep("form");
     setCourseEditPickId("");
+    setFunFactEditStep("form");
+    setFunFactEditPickId("");
+    setHourPackageEditStep("form");
+    setHourPackageEditPickId("");
+    setCommentEditStep("form");
+    setCommentEditPickId("");
   };
 
   const openModal = (groupId, action) => {
+    setFunFactTagFeedback("");
+    setFunFactFeedback("");
+    setHourPackageFeedback("");
+
     setSelectedEntryByGroup((current) => {
       if (current[groupId]) {
         return current;
       }
 
-      const fallbackId = (mockEntriesByGroup[groupId] ?? [])[0]?.id;
+      const fallbackEntries = groupId === "fun-fact-tags" ? funFactTags : groupId === "fun-facts" ? funFacts : groupId === "hour-packages" ? hourPackages : groupId === "comments" ? comments : (mockEntriesByGroup[groupId] ?? []);
+      const fallbackId = fallbackEntries[0]?.id;
       return fallbackId ? { ...current, [groupId]: fallbackId } : current;
     });
 
     if (groupId === "courses" && action === "edit") {
       setCourseEditStep("select");
       setCourseEditPickId("");
+    } else if (groupId === "fun-facts" && action === "edit") {
+      setFunFactEditStep("select");
+      setFunFactEditPickId("");
+    } else if (groupId === "hour-packages" && action === "edit") {
+      setHourPackageEditStep("select");
+      setHourPackageEditPickId("");
+    } else if (groupId === "comments" && action === "edit") {
+      setCommentEditStep("select");
+      setCommentEditPickId("");
     } else {
       setCourseEditStep("form");
       setCourseEditPickId("");
+      setFunFactEditStep("form");
+      setFunFactEditPickId("");
+      setHourPackageEditStep("form");
+      setHourPackageEditPickId("");
+      setCommentEditStep("form");
+      setCommentEditPickId("");
     }
 
     setActiveModal({ groupId, action });
   };
 
+  const handleSave = async () => {
+    if (!activeGroup || activeGroup.id !== "fun-fact-tags") {
+      closeModal();
+      return;
+    }
+
+    const name = document.getElementById("admin-fun-fact-tag-name")?.value?.trim() ?? "";
+    if (!name) {
+      setFunFactTagFeedback("Tag name is required.");
+      return;
+    }
+
+    setIsFunFactTagSaving(true);
+    setFunFactTagFeedback("");
+
+    try {
+      const url = isEditMode ? `${apiBaseUrl}/fun-fact-tags/${selectedEntryId}` : `${apiBaseUrl}/fun-fact-tags`;
+      const method = isEditMode ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody?.detail || "Unable to save fun fact tag");
+      }
+
+      await loadFunFactTags();
+      closeModal();
+    } catch (error) {
+      setFunFactTagFeedback(error?.message || "Unable to save fun fact tag.");
+    } finally {
+      setIsFunFactTagSaving(false);
+    }
+  };
+
+  const handleFunFactSubmit = async (payload) => {
+    if (!activeGroup || activeGroup.id !== "fun-facts") {
+      closeModal();
+      return;
+    }
+
+    setIsFunFactSaving(true);
+    setFunFactFeedback("");
+
+    try {
+      const url = isEditMode ? `${apiBaseUrl}/fun-facts/${selectedEntryId}` : `${apiBaseUrl}/fun-facts`;
+      const method = isEditMode ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody?.detail || "Unable to save fun fact");
+      }
+
+      await loadFunFacts();
+      closeModal();
+    } catch (error) {
+      setFunFactFeedback(error?.message || "Unable to save fun fact.");
+    } finally {
+      setIsFunFactSaving(false);
+    }
+  };
+
+  const handleHourPackageSubmit = async (payload) => {
+    if (!activeGroup || activeGroup.id !== "hour-packages") {
+      closeModal();
+      return;
+    }
+
+    setIsHourPackageSaving(true);
+    setHourPackageFeedback("");
+
+    try {
+      const url = isEditMode ? `${apiBaseUrl}/hour-packages/${selectedEntryId}` : `${apiBaseUrl}/hour-packages`;
+      const method = isEditMode ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody?.detail || "Unable to save hour package");
+      }
+
+      await loadHourPackages();
+      closeModal();
+    } catch (error) {
+      setHourPackageFeedback(error?.message || "Unable to save hour package.");
+    } finally {
+      setIsHourPackageSaving(false);
+    }
+  };
+
+  const handleCommentSubmit = async (payload) => {
+    if (!activeGroup || activeGroup.id !== "comments") {
+      closeModal();
+      return;
+    }
+
+    setIsCommentSaving(true);
+    setCommentFeedback("");
+
+    try {
+      const url = isEditMode ? `${apiBaseUrl}/comments/${selectedEntryId}` : `${apiBaseUrl}/comments`;
+      const method = isEditMode ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody?.detail || "Unable to save comment");
+      }
+
+      await loadComments();
+      closeModal();
+    } catch (error) {
+      setCommentFeedback(error?.message || "Unable to save comment.");
+    } finally {
+      setIsCommentSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!activeGroup || !selectedEntryId) {
+      closeModal();
+      return;
+    }
+
+    if (activeGroup.id === "fun-facts") {
+      setIsFunFactSaving(true);
+      setFunFactFeedback("");
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/fun-facts/${selectedEntryId}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody?.detail || "Unable to delete fun fact");
+        }
+
+        await loadFunFacts();
+        setSelectedEntryByGroup((current) => ({
+          ...current,
+          "fun-facts": "",
+        }));
+        closeModal();
+      } catch (error) {
+        setFunFactFeedback(error?.message || "Unable to delete fun fact.");
+      } finally {
+        setIsFunFactSaving(false);
+      }
+
+      return;
+    }
+
+    if (activeGroup.id === "hour-packages") {
+      setIsHourPackageSaving(true);
+      setHourPackageFeedback("");
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/hour-packages/${selectedEntryId}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody?.detail || "Unable to delete hour package");
+        }
+
+        await loadHourPackages();
+        setSelectedEntryByGroup((current) => ({
+          ...current,
+          "hour-packages": "",
+        }));
+        closeModal();
+      } catch (error) {
+        setHourPackageFeedback(error?.message || "Unable to delete hour package.");
+      } finally {
+        setIsHourPackageSaving(false);
+      }
+
+      return;
+    }
+
+    if (activeGroup.id === "comments") {
+      setIsCommentSaving(true);
+      setCommentFeedback("");
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/comments/${selectedEntryId}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody?.detail || "Unable to delete comment");
+        }
+
+        await loadComments();
+        setSelectedEntryByGroup((current) => ({
+          ...current,
+          comments: "",
+        }));
+        closeModal();
+      } catch (error) {
+        setCommentFeedback(error?.message || "Unable to delete comment.");
+      } finally {
+        setIsCommentSaving(false);
+      }
+
+      return;
+    }
+
+    if (activeGroup.id !== "fun-fact-tags") {
+      closeModal();
+      return;
+    }
+
+    setIsFunFactTagSaving(true);
+    setFunFactTagFeedback("");
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/fun-fact-tags/${selectedEntryId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody?.detail || "Unable to delete fun fact tag");
+      }
+
+      await loadFunFactTags();
+      setSelectedEntryByGroup((current) => ({
+        ...current,
+        "fun-fact-tags": "",
+      }));
+      closeModal();
+    } catch (error) {
+      setFunFactTagFeedback(error?.message || "Unable to delete fun fact tag.");
+    } finally {
+      setIsFunFactTagSaving(false);
+    }
+  };
+
   const isEditMode = activeModal?.action === "edit";
   const isCourseEditSelection = isEditMode && activeGroup?.id === "courses" && courseEditStep === "select";
-
-  const renderCourseForm = () => {
-    const draftCourse = selectedEntry ?? {
-      title: "",
-      level: "",
-      duration: "",
-      hours: 0,
-      location: "",
-      model: "Group",
-      startDate: "",
-      endDate: "",
-      maxStudents: 0,
-      description: "",
-      learning: "",
-      teacher: "",
-    };
-
-    return (
-      <>
-        <div className="admin-content-form-section-title">Basic Information</div>
-        <div className="admin-content-form-grid two-columns">
-          <div>
-            <label htmlFor="admin-course-title">Course title</label>
-            <input id="admin-course-title" type="text" defaultValue={draftCourse.title} />
-          </div>
-          <div>
-            <label htmlFor="admin-course-level">Level</label>
-            <input id="admin-course-level" type="text" defaultValue={draftCourse.level} />
-          </div>
-          <div>
-            <label htmlFor="admin-course-duration">Duration</label>
-            <input id="admin-course-duration" type="text" defaultValue={draftCourse.duration} />
-          </div>
-          <div>
-            <label htmlFor="admin-course-hours">Hours</label>
-            <input id="admin-course-hours" type="number" defaultValue={draftCourse.hours} />
-          </div>
-          <div>
-            <label htmlFor="admin-course-location">Location</label>
-            <input id="admin-course-location" type="text" defaultValue={draftCourse.location} />
-          </div>
-          <div>
-            <label htmlFor="admin-course-model">Model</label>
-            <select id="admin-course-model" defaultValue={draftCourse.model}>
-              <option>Group</option>
-              <option>Individual</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="admin-course-start">Start date</label>
-            <input id="admin-course-start" type="date" defaultValue={draftCourse.startDate} />
-          </div>
-          <div>
-            <label htmlFor="admin-course-end">End date</label>
-            <input id="admin-course-end" type="date" defaultValue={draftCourse.endDate} />
-          </div>
-          <div>
-            <label htmlFor="admin-course-max-students">Max students</label>
-            <input id="admin-course-max-students" type="number" defaultValue={draftCourse.maxStudents} />
-          </div>
-        </div>
-
-        <div className="admin-content-form-section-title">Course Details</div>
-        <div className="admin-content-form-grid">
-          <div>
-            <label htmlFor="admin-course-description">Description</label>
-            <textarea id="admin-course-description" rows="3" defaultValue={draftCourse.description} />
-          </div>
-          <div>
-            <label htmlFor="admin-course-learning">What you'll learn</label>
-            <textarea id="admin-course-learning" rows="3" defaultValue={draftCourse.learning} />
-          </div>
-          <div>
-            <label htmlFor="admin-course-teacher">Teacher</label>
-            <select id="admin-course-teacher" defaultValue={draftCourse.teacher}>
-              {teachers.map((teacherName) => (
-                <option key={teacherName} value={teacherName}>
-                  {teacherName}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </>
-    );
-  };
+  const isFunFactEditSelection = isEditMode && activeGroup?.id === "fun-facts" && funFactEditStep === "select";
+  const isHourPackageEditSelection = isEditMode && activeGroup?.id === "hour-packages" && hourPackageEditStep === "select";
+  const isCommentEditSelection = isEditMode && activeGroup?.id === "comments" && commentEditStep === "select";
+  const isSelectionStep = isCourseEditSelection || isFunFactEditSelection || isHourPackageEditSelection || isCommentEditSelection;
 
   const renderGenericForm = () => {
     if (!activeGroup) {
@@ -305,57 +635,20 @@ export default function ManageContentSection() {
     const draft = selectedEntry ?? fallbackEntry;
 
     if (activeGroup.id === "fun-facts") {
-      return (
-        <>
-          {isEditMode ? (
-            <>
-              <label htmlFor="admin-fact-picker">Select fun fact</label>
-              <select id="admin-fact-picker" value={selectedEntryId} onChange={(event) => setSelectedEntryByGroup((current) => ({ ...current, "fun-facts": event.target.value }))}>
-                {activeEntries.map((entry) => (
-                  <option key={entry.id} value={entry.id}>
-                    {entry.title}
-                  </option>
-                ))}
-              </select>
-            </>
-          ) : null}
-          <div className="admin-content-form-grid two-columns">
-            <div>
-              <label htmlFor="admin-fact-title">Title</label>
-              <input id="admin-fact-title" type="text" defaultValue={draft.title} />
-            </div>
-            <div>
-              <label htmlFor="admin-fact-category">Category</label>
-              <select id="admin-fact-category" defaultValue={draft.category ?? "Language"}>
-                <option>Language</option>
-                <option>Culture</option>
-                <option>History</option>
-              </select>
-            </div>
-            <div className="span-two-columns">
-              <label htmlFor="admin-fact-image">Image URL</label>
-              <input id="admin-fact-image" type="text" defaultValue={draft.imageUrl} />
-            </div>
-            <div className="span-two-columns">
-              <label htmlFor="admin-fact-excerpt">Excerpt</label>
-              <textarea id="admin-fact-excerpt" rows="2" defaultValue={draft.excerpt} />
-            </div>
-            <div className="span-two-columns">
-              <label htmlFor="admin-fact-content">Fact content</label>
-              <textarea id="admin-fact-content" rows="4" defaultValue={draft.content} />
-            </div>
-          </div>
-        </>
-      );
+      return <>{isFunFactLoading ? <p>Loading fun facts...</p> : <FunFactForm fact={isEditMode ? selectedEntry : null} onSubmit={handleFunFactSubmit} apiBaseUrl={apiBaseUrl} />}</>;
     }
 
-    if (activeGroup.id === "hour-packages") {
+    if (activeGroup.id === "fun-fact-tags") {
+      if (isFunFactTagLoading) {
+        return <p>Loading tags...</p>;
+      }
+
       return (
         <>
           {isEditMode ? (
             <>
-              <label htmlFor="admin-package-picker">Select package</label>
-              <select id="admin-package-picker" value={selectedEntryId} onChange={(event) => setSelectedEntryByGroup((current) => ({ ...current, "hour-packages": event.target.value }))}>
+              <label htmlFor="admin-fun-fact-tag-picker">Select tag</label>
+              <select id="admin-fun-fact-tag-picker" value={selectedEntryId} onChange={(event) => setSelectedEntryByGroup((current) => ({ ...current, "fun-fact-tags": Number(event.target.value) }))}>
                 {activeEntries.map((entry) => (
                   <option key={entry.id} value={entry.id}>
                     {entry.name}
@@ -364,35 +657,7 @@ export default function ManageContentSection() {
               </select>
             </>
           ) : null}
-          <div className="admin-content-form-grid two-columns">
-            <div>
-              <label htmlFor="admin-package-name">Package name</label>
-              <input id="admin-package-name" type="text" defaultValue={draft.name} />
-            </div>
-            <div>
-              <label htmlFor="admin-package-format">Format</label>
-              <select id="admin-package-format" defaultValue={draft.format ?? "Individual"}>
-                <option>Individual</option>
-                <option>Group</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="admin-package-hours">Total hours</label>
-              <input id="admin-package-hours" type="number" defaultValue={draft.hours} />
-            </div>
-            <div>
-              <label htmlFor="admin-package-price">Price (EUR)</label>
-              <input id="admin-package-price" type="number" defaultValue={draft.price} />
-            </div>
-            <div>
-              <label htmlFor="admin-package-validity">Valid for</label>
-              <input id="admin-package-validity" type="text" defaultValue={draft.validFor} />
-            </div>
-            <div className="span-two-columns">
-              <label htmlFor="admin-package-notes">Notes</label>
-              <textarea id="admin-package-notes" rows="3" defaultValue={draft.notes} />
-            </div>
-          </div>
+          <FunFactTagForm tag={isEditMode ? selectedEntry : null} />
         </>
       );
     }
@@ -554,8 +819,87 @@ export default function ManageContentSection() {
       );
     }
 
+    if (isFunFactEditSelection) {
+      return (
+        <div className="admin-course-picker-buttons" role="listbox" aria-label="Select fun fact to edit">
+          {activeEntries.map((entry) => (
+            <button key={entry.id} type="button" className={`admin-course-picker-button ${funFactEditPickId === entry.id ? "is-selected" : ""}`} onClick={() => setFunFactEditPickId(entry.id)}>
+              <span>{entry.title}</span>
+              <span>{entry.created_at ? new Date(entry.created_at).toLocaleString() : "No date"}</span>
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    if (isHourPackageEditSelection) {
+      if (isHourPackageLoading) {
+        return <p>Loading hour packages...</p>;
+      }
+
+      if (hourPackageFeedback) {
+        return <p className="admin-content-form-error">{hourPackageFeedback}</p>;
+      }
+
+      if (activeEntries.length === 0) {
+        return <p>No hour packages found. Please create one first.</p>;
+      }
+
+      return (
+        <div className="admin-course-picker-buttons" role="listbox" aria-label="Select hour package to edit">
+          {activeEntries.map((entry) => (
+            <button key={entry.id} type="button" className={`admin-course-picker-button ${hourPackageEditPickId === entry.id ? "is-selected" : ""}`} onClick={() => setHourPackageEditPickId(entry.id)}>
+              <span>{entry.name}</span>
+              <span>{entry.hours} hours</span>
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    if (isCommentEditSelection) {
+      if (isCommentLoading) {
+        return <p>Loading comments...</p>;
+      }
+
+      if (activeEntries.length === 0) {
+        return <p>No comments found. Please create one first.</p>;
+      }
+
+      return (
+        <div className="admin-course-picker-buttons" role="listbox" aria-label="Select comment to edit">
+          {activeEntries.map((entry) => (
+            <button key={entry.id} type="button" className={`admin-course-picker-button ${commentEditPickId === entry.id ? "is-selected" : ""}`} onClick={() => setCommentEditPickId(entry.id)}>
+              <span>{entry.author}</span>
+              <span>{entry.status}</span>
+            </button>
+          ))}
+        </div>
+      );
+    }
+
     if (activeGroup.id === "courses") {
-      return renderCourseForm();
+      return <CourseForm course={isEditMode ? selectedEntry : null} />;
+    }
+
+    if (activeGroup.id === "hour-packages") {
+      if (isHourPackageEditSelection && isHourPackageLoading) {
+        return <p>Loading hour packages...</p>;
+      }
+
+      return <HourPackageForm hourPackage={isEditMode ? selectedEntry : null} onSubmit={handleHourPackageSubmit} />;
+    }
+
+    if (activeGroup.id === "comments") {
+      if (isCommentLoading) {
+        return <p>Loading comments...</p>;
+      }
+
+      if (isEditMode && activeEntries.length === 0) {
+        return <p>No comments found. Please create one first.</p>;
+      }
+
+      return <CommentForm comment={isEditMode ? selectedEntry : null} onSubmit={handleCommentSubmit} />;
     }
 
     return renderGenericForm();
@@ -591,8 +935,13 @@ export default function ManageContentSection() {
               <X size={18} aria-hidden="true" />
             </button>
 
-            <h3>{isCourseEditSelection ? "Select Course" : `${isEditMode ? "Edit" : "Create"} ${activeGroup?.title}`}</h3>
-            <p>{isCourseEditSelection ? "Choose one course first, then confirm to continue to the edit screen." : "This is a UI prototype for future backend integration. The same popup pattern can be connected to API requests later."}</p>
+            <h3>{isSelectionStep ? `Select ${activeGroup?.title?.replace(/s$/, "") ?? "Item"}` : `${isEditMode ? "Edit" : "Create"} ${activeGroup?.title}`}</h3>
+            <p>{isSelectionStep ? "Choose one item first, then confirm to continue to the edit screen." : "Fill out the information fields."}</p>
+
+            {activeGroup?.id === "fun-fact-tags" && funFactTagFeedback ? <p className="admin-content-modal-feedback">{funFactTagFeedback}</p> : null}
+            {activeGroup?.id === "fun-facts" && funFactFeedback ? <p className="admin-content-modal-feedback">{funFactFeedback}</p> : null}
+            {activeGroup?.id === "hour-packages" && hourPackageFeedback ? <p className="admin-content-modal-feedback">{hourPackageFeedback}</p> : null}
+            {activeGroup?.id === "comments" && commentFeedback ? <p className="admin-content-modal-feedback">{commentFeedback}</p> : null}
 
             {renderModalBody()}
 
@@ -600,30 +949,62 @@ export default function ManageContentSection() {
               <button type="button" className="admin-content-modal-cancel" onClick={closeModal}>
                 Cancel
               </button>
-              {isCourseEditSelection ? (
+              {isSelectionStep ? (
                 <button
                   type="button"
                   className="admin-content-modal-confirm"
                   onClick={() => {
-                    if (!courseEditPickId) {
+                    if (isCourseEditSelection) {
+                      if (!courseEditPickId) {
+                        return;
+                      }
+
+                      setSelectedEntryByGroup((current) => ({ ...current, courses: courseEditPickId }));
+                      setCourseEditStep("form");
                       return;
                     }
 
-                    setSelectedEntryByGroup((current) => ({ ...current, courses: courseEditPickId }));
-                    setCourseEditStep("form");
+                    if (isFunFactEditSelection) {
+                      if (!funFactEditPickId) {
+                        return;
+                      }
+
+                      setSelectedEntryByGroup((current) => ({ ...current, "fun-facts": funFactEditPickId }));
+                      setFunFactEditStep("form");
+                      return;
+                    }
+
+                    if (isHourPackageEditSelection) {
+                      if (!hourPackageEditPickId) {
+                        return;
+                      }
+
+                      setSelectedEntryByGroup((current) => ({ ...current, "hour-packages": hourPackageEditPickId }));
+                      setHourPackageEditStep("form");
+                      return;
+                    }
+
+                    if (isCommentEditSelection) {
+                      if (!commentEditPickId) {
+                        return;
+                      }
+
+                      setSelectedEntryByGroup((current) => ({ ...current, comments: commentEditPickId }));
+                      setCommentEditStep("form");
+                    }
                   }}
-                  disabled={!courseEditPickId}
+                  disabled={isCourseEditSelection ? !courseEditPickId : isFunFactEditSelection ? !funFactEditPickId : isHourPackageEditSelection ? !hourPackageEditPickId : isCommentEditSelection ? !commentEditPickId : false}
                 >
                   Confirm
                 </button>
               ) : null}
-              {isEditMode && !isCourseEditSelection ? (
-                <button type="button" className="admin-content-modal-delete" onClick={closeModal}>
+              {isEditMode && !isSelectionStep ? (
+                <button type="button" className="admin-content-modal-delete" onClick={activeGroup?.id === "fun-fact-tags" || activeGroup?.id === "fun-facts" || activeGroup?.id === "hour-packages" || activeGroup?.id === "comments" ? handleDelete : closeModal} disabled={activeGroup?.id === "fun-fact-tags" ? isFunFactTagSaving : activeGroup?.id === "fun-facts" ? isFunFactSaving : activeGroup?.id === "hour-packages" ? isHourPackageSaving : activeGroup?.id === "comments" ? isCommentSaving : false}>
                   Delete
                 </button>
               ) : null}
-              {!isCourseEditSelection ? (
-                <button type="button" className="admin-content-modal-confirm" onClick={closeModal}>
+              {!isSelectionStep ? (
+                <button type={activeGroup?.id === "fun-facts" || activeGroup?.id === "hour-packages" || activeGroup?.id === "comments" ? "submit" : "button"} form={activeGroup?.id === "fun-facts" ? "admin-fun-fact-form" : activeGroup?.id === "hour-packages" ? "admin-hour-package-form" : activeGroup?.id === "comments" ? "admin-comment-form" : undefined} className="admin-content-modal-confirm" onClick={activeGroup?.id === "fun-fact-tags" ? handleSave : activeGroup?.id === "fun-facts" || activeGroup?.id === "hour-packages" || activeGroup?.id === "comments" ? undefined : closeModal} disabled={activeGroup?.id === "fun-fact-tags" ? isFunFactTagSaving : activeGroup?.id === "fun-facts" ? isFunFactSaving : activeGroup?.id === "hour-packages" ? isHourPackageSaving : activeGroup?.id === "comments" ? isCommentSaving : false}>
                   {isEditMode ? "Save" : "Create"}
                 </button>
               ) : null}

@@ -16,6 +16,7 @@ import StudentDashboard from "./pages/Student/StudentDashboard/StudentDashboard"
 import StudentDetails from "./pages/Student/StudentDetails/StudentDetails";
 import CreateStudent from "./pages/student/CreateStudent/CreateStudent";
 import CreateTeacher from "./pages/Admin/CreateTeacher/CreateTeacher";
+import ProtectedRoute from "./components/Auth/ProtectedRoute/ProtectedRoute";
 
 function ScrollToTopOnRouteChange() {
   const { pathname } = useLocation();
@@ -42,11 +43,19 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/fun-fact" element={<FunFact />} />
           <Route path="/fun-facts" element={<FunFacts />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          <Route path="/student-dashboard" element={<StudentDashboard />} />
-          <Route path="/student-details/:id" element={<StudentDetails />} />
-          <Route path="/create-student" element={<CreateStudent />} />
-          <Route path="/create-teacher" element={<CreateTeacher />} />
+          <Route path="/fun-facts/:slug" element={<FunFact />} />
+
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/student-details" element={<StudentDetails />} />
+            <Route path="/student-details/:id" element={<StudentDetails />} />
+            <Route path="/create-student" element={<CreateStudent />} />
+            <Route path="/create-teacher" element={<CreateTeacher />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={["student", "unrolled_student"]} />}>
+            <Route path="/student-dashboard" element={<StudentDashboard />} />
+          </Route>
         </Route>
       </Routes>
     </>

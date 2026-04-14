@@ -7,7 +7,9 @@ export default function StudentDetails() {
     const { id } = useParams(); // dynamic route
     const navigate = useNavigate();
 
-    
+
+
+
 
     const [student, setStudent] = useState(null);
     const [notes, setNotes] = useState("");

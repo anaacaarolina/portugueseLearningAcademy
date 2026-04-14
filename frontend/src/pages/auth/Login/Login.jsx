@@ -2,41 +2,85 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeClosed } from "lucide-react";
 import { useState } from "react";
 import SocialAuthPanel from "../../../components/Auth/SocialAuthPanel/SocialAuthPanel";
+import { getDashboardPathByRole } from "../../../utils/auth";
 import "./Login.css";
 
-export function getCurrentUser() {
-    return JSON.parse(localStorage.getItem("user"));
-}
 export default function Login() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleRedirectHome = () => {
     navigate("/");
   };
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-        const formData = new FormData(event.target);
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get("email")?.toString().trim() ?? "";
+    const password = formData.get("password")?.toString() ?? "";
+    const rememberMe = formData.get("terms") === "on";
 
-        const res = await fetch("/api/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                email: formData.get("email"),
-                password: formData.get("password"),
-            }),
-        });
+    setErrorMessage("");
+    setIsSubmitting(true);
 
-        const user = await res.json();
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+      const payload = new URLSearchParams({
+        username: email,
+        password,
+      });
 
-        localStorage.setItem("user", JSON.stringify(user));
+      const response = await fetch(`${apiBaseUrl}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: payload.toString(),
+      });
 
-        navigate("/");
-    };;
+      if (!response.ok) {
+        let backendMessage = "Unable to sign in. Please check your credentials.";
 
-    
+        try {
+          const data = await response.json();
+          if (typeof data?.detail === "string") {
+            backendMessage = data.detail;
+          }
+        } catch {
+          // Fall back to default message when response has no JSON body.
+        }
+
+        throw new Error(backendMessage);
+      }
+
+      const data = await response.json();
+      const storage = rememberMe ? localStorage : sessionStorage;
+
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("token_type");
+      localStorage.removeItem("auth_role");
+      localStorage.removeItem("has_active_enrollment");
+      sessionStorage.removeItem("access_token");
+      sessionStorage.removeItem("token_type");
+      sessionStorage.removeItem("auth_role");
+      sessionStorage.removeItem("has_active_enrollment");
+
+      storage.setItem("access_token", data.access_token);
+      storage.setItem("token_type", data.token_type);
+      storage.setItem("auth_role", data.user_role || "student");
+      storage.setItem("has_active_enrollment", String(Boolean(data.has_active_enrollment)));
+
+      const dashboardPath = getDashboardPathByRole(data.user_role || "student") || "/";
+      navigate(dashboardPath);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <section className="login">
@@ -51,6 +95,8 @@ export default function Login() {
           </div>
 
           <form className="login-form" onSubmit={handleSubmit}>
+            {errorMessage ? <p className="login-form__error-msg">{errorMessage}</p> : null}
+
             <label htmlFor="login-email">Email</label>
             <input id="login-email" name="email" type="email" placeholder="youremail@example.com" required />
 
@@ -63,15 +109,15 @@ export default function Login() {
             </div>
             <div className="login-checkbox-password-reset">
               <label className="login-form__checkbox" htmlFor="login-terms">
-                <input id="login-terms" name="terms" type="checkbox" required />
+                <input id="login-terms" name="terms" type="checkbox" />
                 <span className="login-form__checkmark" aria-hidden="true"></span>
                 <span className="login-form__checkbox-text">Remember Me</span>
               </label>
               <p className="login-password-reset">Forgot your password?</p>
             </div>
 
-            <button type="submit" className="login-form__submit-btn">
-              Sign in
+            <button type="submit" className="login-form__submit-btn" disabled={isSubmitting}>
+              {isSubmitting ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
