@@ -3,4 +3,5 @@ backend/.env
 .vs/
 bin/
 obj/
-.github
+.github__pycache__/
+*.pyc
