@@ -1,7 +1,16 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from database import get_db
+from models import Course
+from schema import CourseResponse
 
 router = APIRouter()
 
-@router.get("/")
-async def get_courses():
-    return {"courses": []}
+@router.get("/", response_model=list[CourseResponse])
+def list_courses(db: Session = Depends(get_db)):
+    return (
+        db.query(Course)
+        .order_by(Course.type.asc(), Course.level.asc(), Course.created_at.desc())
+        .all()
+    )

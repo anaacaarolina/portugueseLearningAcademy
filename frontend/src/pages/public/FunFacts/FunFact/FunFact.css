@@ -8,6 +8,14 @@
   padding: var(--section-padding);
 }
 
+.fun-fact-status-message {
+  margin: 0;
+  padding: 1rem var(--section-padding);
+  text-align: center;
+  color: var(--dark-blue);
+  font-weight: 700;
+}
+
 .fun-fact-hero-section {
   position: relative;
   min-height: 210px;

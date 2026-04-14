@@ -10,11 +10,11 @@ from services.auth_services import get_password_hash
 from models import (
     User, Teacher, HourPackage, Course, CourseSchedule,
     Enrollment, PreEnrollment, Waitlist, Payment, HourTransfer,
-    TeacherAvailability, ClassBooking, Notification, FunFactTag, FunFact,
+    TeacherAvailability, ClassBooking, Notification, FunFactTag, FunFact, Comment,
     UserRole, CourseLevel, CourseType, CourseRegime, CourseStatus,
     DayOfWeek, EnrollmentStatus, PreEnrollmentStatus, WaitlistStatus,
     PaymentStatus, PaymentType, NotificationChannel, NotificationStatus,
-    BookingStatus,
+    BookingStatus, CommentStatus,
 )
 
 def hash_password(plain: str) -> str:
@@ -88,10 +88,10 @@ def run():
         # ------------------------------------------------------------------ #
         print("Seeding hour_packages...")
         package_data = [
-            {"name": "Trial Class",    "hours": Decimal("1.0"),  "price": Decimal("15.00"), "is_trial": True,  "is_active": True},
-            {"name": "Starter Pack",   "hours": Decimal("5.0"),  "price": Decimal("60.00"), "is_trial": False, "is_active": True},
-            {"name": "Standard Pack",  "hours": Decimal("10.0"), "price": Decimal("110.00"),"is_trial": False, "is_active": True},
-            {"name": "Intensive Pack", "hours": Decimal("20.0"), "price": Decimal("200.00"),"is_trial": False, "is_active": True},
+            {"name": "Trial Class",    "hours": Decimal("1.0"),  "price": Decimal("15.00"), "is_trial": True,  "is_active": True, "is_popular": False},
+            {"name": "Starter Pack",   "hours": Decimal("5.0"),  "price": Decimal("60.00"), "is_trial": False, "is_active": True, "is_popular": True},
+            {"name": "Standard Pack",  "hours": Decimal("10.0"), "price": Decimal("110.00"),"is_trial": False, "is_active": True, "is_popular": False},
+            {"name": "Intensive Pack", "hours": Decimal("20.0"), "price": Decimal("200.00"),"is_trial": False, "is_active": True, "is_popular": False},
         ]
         packages = {}
         for p in package_data:
@@ -336,7 +336,6 @@ def run():
                 "key_points": "<ul><li>The word <em>bica</em> is commonly used in Lisbon for a small espresso-style coffee.</li><li>Coffee culture in Portugal is social and fast, often enjoyed standing at the counter.</li><li>A bica is usually stronger and shorter than the average filter coffee.</li><li>Ordering coffee like a local helps learners connect with daily language habits.</li></ul>",
                 "did_you_know": "The popular saying that explains bica as an acronym for \"Beba Isto Com Açúcar\" is famous, but historians still debate if that is the true origin.",
                 "image_url": "https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1400&q=80",
-                "read_time_minutes": 3,
                 "is_published": True,
             },
             {
@@ -347,7 +346,6 @@ def run():
                 "key_points": "<ul><li>The personal infinitive is unique to Portuguese among major Romance languages.</li><li>It is conjugated across all six grammatical persons.</li><li>It often replaces subordinate clauses in formal and written Portuguese.</li><li>Mastering it separates intermediate learners from advanced speakers.</li></ul>",
                 "did_you_know": "Brazilian and European Portuguese use the personal infinitive in slightly different contexts, which sometimes causes confusion even between native speakers.",
                 "image_url": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=1400&q=80",
-                "read_time_minutes": 4,
                 "is_published": True,
             },
             {
@@ -358,7 +356,6 @@ def run():
                 "key_points": "<ul><li>Fado was granted UNESCO Intangible Cultural Heritage status in 2011.</li><li>It is most associated with Lisbon and Coimbra, each with a distinct style.</li><li>The concept of <em>saudade</em> — a nostalgic longing — is central to fado lyrics.</li><li>Understanding fado helps learners grasp the emotional depth of the language.</li></ul>",
                 "did_you_know": "Amália Rodrigues, known as the Queen of Fado, helped bring the genre to international audiences in the 20th century and remains its most iconic figure.",
                 "image_url": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1400&q=80",
-                "read_time_minutes": 3,
                 "is_published": True,
             },
         ]
@@ -611,6 +608,36 @@ def run():
             ).first()
             if not existing:
                 db.add(Notification(**n))
+        db.commit()
+
+        # ------------------------------------------------------------------ #
+        # 16. COMMENTS
+        # ------------------------------------------------------------------ #
+        print("Seeding comments...")
+        comment_data = [
+            {
+                "author": "Ana Costa",
+                "rating": 5,
+                "status": CommentStatus.published,
+                "body": "Great teachers and practical classes.",
+            },
+            {
+                "author": "Miguel Ferreira",
+                "rating": 4,
+                "status": CommentStatus.pending,
+                "body": "Very good content and organization.",
+            },
+            {
+                "author": "Sofia Mendes",
+                "rating": 5,
+                "status": CommentStatus.published,
+                "body": "The lessons are clear, structured, and easy to follow.",
+            },
+        ]
+        for c in comment_data:
+            existing = db.query(Comment).filter_by(author=c["author"], body=c["body"]).first()
+            if not existing:
+                db.add(Comment(**c))
         db.commit()
 
         print("\n:) Seed complete.")

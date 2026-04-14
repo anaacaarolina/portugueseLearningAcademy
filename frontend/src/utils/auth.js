@@ -9,7 +9,6 @@ export function getStoredAuth() {
     return { isAuthenticated: false, role: null, hasActiveEnrollment: false };
   }
 
-  // Backward compatibility for sessions created before role fields existed.
   const role = storage.getItem("auth_role") || "student";
   const hasActiveEnrollment = storage.getItem("has_active_enrollment") === "true";
 
@@ -36,7 +35,6 @@ export function getDashboardPathByRole(role) {
     return "/student-dashboard";
   }
 
-  // Fallback for authenticated sessions with missing/unknown role.
   if (role) {
     return "/student-dashboard";
   }

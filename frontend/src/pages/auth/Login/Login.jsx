@@ -59,7 +59,6 @@ export default function Login() {
       const data = await response.json();
       const storage = rememberMe ? localStorage : sessionStorage;
 
-      // Keep storage clean so old role/token values do not conflict across sessions.
       localStorage.removeItem("access_token");
       localStorage.removeItem("token_type");
       localStorage.removeItem("auth_role");

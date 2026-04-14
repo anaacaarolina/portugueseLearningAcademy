@@ -105,6 +105,7 @@ class HourPackage(Base):
     price = Column(Numeric(8, 2))
     is_trial = Column(Boolean)
     is_active = Column(Boolean)
+    is_popular = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -240,7 +241,6 @@ class FunFact(Base):
     key_points        = Column(Text, nullable=False, default=list)
     did_you_know      = Column(Text, nullable=True)
     image_url         = Column(String, nullable=True)
-    read_time_minutes = Column(SmallInteger, nullable=True)
     is_published      = Column(Boolean, default=False, nullable=False)
     created_at        = Column(DateTime, default=func.now())
     updated_at        = Column(DateTime, default=func.now(), onupdate=func.now())

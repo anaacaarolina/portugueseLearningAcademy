@@ -26,7 +26,6 @@ export default function StudentDetails() {
   };
 
   function handleSaveNotes() {
-    // Persists notes locally until API persistence is added.
     localStorage.setItem(`student-notes-${student.email}`, notes);
     setIsSaved(true);
   }
