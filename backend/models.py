@@ -78,6 +78,7 @@ class User(Base):
     apple_id = Column(String)
     email_verified_at = Column(DateTime)
     role = Column(Enum(UserRole))
+    is_active = Column(Boolean, default=True)
     street = Column(String)
     city = Column(String)
     postal_code = Column(String)
@@ -206,7 +207,7 @@ class TeacherAvailability(Base):
 class ClassBooking(Base):
     __tablename__ = "class_bookings"
     id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("students.id"))
+    enrollment_id = Column(BigInteger, ForeignKey("enrollments.id"))
     availability_id = Column(BigInteger, ForeignKey("teacher_availability.id"))
     status = Column(Enum(BookingStatus), default=BookingStatus.scheduled)
     hours_deducted = Column(Numeric(5, 1))

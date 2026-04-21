@@ -20,9 +20,22 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.add_column('hour_packages', sa.Column('is_popular', sa.Boolean(), nullable=True, server_default=sa.text('0')))
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    columns = {column["name"] for column in inspector.get_columns("hour_packages")}
+
+    if "is_popular" not in columns:
+        op.add_column(
+            "hour_packages",
+            sa.Column("is_popular", sa.Boolean(), nullable=True, server_default=sa.text("0")),
+        )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_column('hour_packages', 'is_popular')
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    columns = {column["name"] for column in inspector.get_columns("hour_packages")}
+
+    if "is_popular" in columns:
+        op.drop_column("hour_packages", "is_popular")

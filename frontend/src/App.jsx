@@ -15,7 +15,6 @@ import AdminDashboard from "./pages/Admin/AdminDashboard/AdminDashboard";
 import StudentDashboard from "./pages/Student/StudentDashboard/StudentDashboard";
 import StudentDetails from "./pages/Student/StudentDetails/StudentDetails";
 import CreateStudent from "./pages/student/CreateStudent/CreateStudent";
-import CreateTeacher from "./pages/Admin/CreateTeacher/CreateTeacher";
 import ProtectedRoute from "./components/Auth/ProtectedRoute/ProtectedRoute";
 
 function ScrollToTopOnRouteChange() {
@@ -50,7 +49,6 @@ function App() {
             <Route path="/student-details" element={<StudentDetails />} />
             <Route path="/student-details/:id" element={<StudentDetails />} />
             <Route path="/create-student" element={<CreateStudent />} />
-            <Route path="/create-teacher" element={<CreateTeacher />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={["student", "unrolled_student"]} />}>

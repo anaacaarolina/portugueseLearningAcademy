@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
 from datetime import datetime, date, time
 from decimal import Decimal
@@ -18,6 +18,7 @@ class UserBase(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     role: Optional[UserRole] = None
+    is_active: Optional[bool] = True
     street: Optional[str] = None
     city: Optional[str] = None
     postal_code: Optional[str] = None
@@ -25,6 +26,9 @@ class UserBase(BaseModel):
     notes: Optional[str] = None
 
 class UserCreate(UserBase):
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str = Field(alias="full_name")
     email: EmailStr
     password: str
 

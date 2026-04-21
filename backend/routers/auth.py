@@ -48,11 +48,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
 
     if "name" in columns:
         insert_columns.append("name")
-        insert_values["name"] = user_data.full_name
-
-    if "full_name" in columns:
-        insert_columns.append("full_name")
-        insert_values["full_name"] = user_data.full_name
+        insert_values["name"] = user_data.name
 
     if "hashed_password" in columns:
         insert_columns.append("hashed_password")
@@ -77,7 +73,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     return {
         "id": new_user_id,
         "email": str(user_data.email),
-        "full_name": user_data.full_name,
+        "name": user_data.name,
         "role": UserRole.student,
         "is_active": True,
     }

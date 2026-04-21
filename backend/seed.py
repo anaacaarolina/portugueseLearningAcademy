@@ -130,19 +130,17 @@ def run():
         now = datetime.now(timezone.utc)
         user_data = [
             {
-                "full_name": "Admin User",
                 "name": "Admin",
                 "email": "admin@portugueseacademy.pt",
-                "hashed_password": hash_password("Admin1234!"),
+                "password": hash_password("Admin1234!"),
                 "role": UserRole.admin,
                 "is_active": True,
                 "email_verified_at": now,
             },
             {
-                "full_name": "Maria Silva",
-                "name": "Maria",
+                "name": "Maria Silva",
                 "email": "maria.silva@example.com",
-                "hashed_password": hash_password("Student1234!"),
+                "password": hash_password("Student1234!"),
                 "role": UserRole.student,
                 "is_active": True,
                 "email_verified_at": now,
@@ -151,10 +149,9 @@ def run():
                 "country": "Portugal",
             },
             {
-                "full_name": "Luís Costa",
-                "name": "Luís",
+                "name": "Luís Costa",
                 "email": "luis.costa@example.com",
-                "hashed_password": hash_password("Student1234!"),
+                "password": hash_password("Student1234!"),
                 "role": UserRole.student,
                 "is_active": True,
                 "email_verified_at": now,
@@ -163,10 +160,9 @@ def run():
                 "country": "Portugal",
             },
             {
-                "full_name": "Patrice Rousseau ",
-                "name": "Patrice",
+                "name": "Patrice Rousseau ",
                 "email": "patrice.rousseau@example.com",
-                "hashed_password": hash_password("Student1234!"),
+                "password": hash_password("Student1234!"),
                 "role": UserRole.student,
                 "is_active": True,
                 "email_verified_at": now,
@@ -174,10 +170,9 @@ def run():
                 "country": "France",
             },
             {
-                "full_name": "Liam O'Brien",
-                "name": "Liam",
+                "name": "Liam O'Brien",
                 "email": "liam.obrien@example.com",
-                "hashed_password": hash_password("Student1234!"),
+                "password": hash_password("Student1234!"),
                 "role": UserRole.student,
                 "is_active": False,
                 "email_verified_at": now,
@@ -185,10 +180,9 @@ def run():
                 "country": "United States of America",
             },
             {
-                "full_name": "Anabella Mendoza",
-                "name": "Anabella",
+                "name": "Anabella Mendoza",
                 "email": "anabella.mendoza@example.com",
-                "hashed_password": hash_password("Student1234!"),
+                "password": hash_password("Student1234!"),
                 "role": UserRole.student,
                 "is_active": False,
                 "email_verified_at": now,
@@ -205,6 +199,9 @@ def run():
                 db.flush()
                 users[u["email"]] = obj
             else:
+                for field, value in u.items():
+                    setattr(existing, field, value)
+                db.flush()
                 users[u["email"]] = existing
         db.commit()
 

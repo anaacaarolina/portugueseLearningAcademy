@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Trash2, X } from "lucide-react";
+import { X } from "lucide-react";
 import CourseForm from "./Forms/CourseForm";
 import HourPackageForm from "./Forms/HourPackageForm";
 import FunFactForm from "./Forms/FunFactForm";
@@ -7,118 +7,6 @@ import FunFactTagForm from "./Forms/FunFactTagForm";
 import CommentForm from "./Forms/CommentForm";
 
 import "./ManageContentSection.css";
-
-const mockEntriesByGroup = {
-  courses: [
-    {
-      id: "course-1",
-      title: "Beginner",
-      level: "A1-A2",
-      duration: "12 weeks",
-      hours: 48,
-      location: "Gaia",
-      model: "Group",
-      startDate: "2026-04-08",
-      endDate: "2026-06-30",
-      maxStudents: 12,
-      description: "Start your Portuguese journey with practical classes focused on everyday communication.",
-      learning: "Build confidence with daily conversation, grammar essentials, and listening practice.",
-      teacher: "Professor Sofia Rodrigues",
-    },
-    {
-      id: "course-2",
-      title: "Business Portuguese",
-      level: "A2-B2",
-      duration: "10 weeks",
-      hours: 40,
-      location: "Online",
-      model: "Group",
-      startDate: "2026-05-06",
-      endDate: "2026-07-15",
-      maxStudents: 10,
-      description: "Learn professional vocabulary and communication for workplace situations.",
-      learning: "Develop confidence in meetings, emails, and workplace conversations in Portuguese.",
-      teacher: "Professor Tiago Almeida",
-    },
-  ],
-  "fun-facts": [
-    {
-      id: "fact-1",
-      title: "Coffee in Portugal Is Usually Called Bica",
-      category: "Culture",
-      imageUrl: "https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=80",
-      excerpt: "If you ask for coffee in many cafes, locals often order a bica.",
-      content: "Bica is a short espresso-like coffee and an important part of Portuguese daily life.",
-    },
-    {
-      id: "fact-2",
-      title: "Portuguese Is Spoken Across Multiple Continents",
-      category: "Language",
-      imageUrl: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?auto=format&fit=crop&w=1200&q=80",
-      excerpt: "Portuguese is an official language in several countries.",
-      content: "Portuguese has global presence across Europe, South America, Africa, and Asia.",
-    },
-  ],
-  "fun-fact-tags": [],
-  "hour-packages": [
-    {
-      id: "package-1",
-      name: "Starter Pack",
-      hours: 10.0,
-      price: 290.0,
-      is_trial: false,
-      is_active: true,
-    },
-    {
-      id: "package-2",
-      name: "Pro Pack",
-      hours: 30.0,
-      price: 780.0,
-      is_trial: false,
-      is_active: true,
-    },
-  ],
-  enrollments: [
-    {
-      id: "enrollment-1",
-      studentName: "Sofia Mendes",
-      course: "Business Portuguese",
-      startDate: "2026-03-01",
-      status: "Pending",
-      paymentStatus: "Unpaid",
-      notes: "Waiting for payment confirmation.",
-    },
-    {
-      id: "enrollment-2",
-      studentName: "Daniel Ribeiro",
-      course: "Advanced C1-C2",
-      startDate: "2025-10-10",
-      status: "Completed",
-      paymentStatus: "Paid",
-      notes: "Completed successfully.",
-    },
-  ],
-  "homepage-content": [
-    {
-      id: "home-1",
-      sectionName: "Hero",
-      title: "Learn Portuguese with Confidence",
-      subtitle: "Achieve your goals",
-      ctaLabel: "Get Started",
-      ctaLink: "/register",
-      notes: "Homepage first fold content.",
-    },
-    {
-      id: "home-2",
-      sectionName: "Testimonials",
-      title: "What Our Students Say",
-      subtitle: "Real feedback from learners",
-      ctaLabel: "Read More",
-      ctaLink: "/fun-facts",
-      notes: "Section title and CTA text.",
-    },
-  ],
-};
 
 export default function ManageContentSection() {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -132,6 +20,10 @@ export default function ManageContentSection() {
   const [hourPackageEditPickId, setHourPackageEditPickId] = useState("");
   const [commentEditStep, setCommentEditStep] = useState("form");
   const [commentEditPickId, setCommentEditPickId] = useState("");
+  const [courses, setCourses] = useState([]);
+  const [isCourseLoading, setIsCourseLoading] = useState(false);
+  const [isCourseSaving, setIsCourseSaving] = useState(false);
+  const [courseFeedback, setCourseFeedback] = useState("");
   const [funFactTags, setFunFactTags] = useState([]);
   const [isFunFactTagLoading, setIsFunFactTagLoading] = useState(false);
   const [isFunFactTagSaving, setIsFunFactTagSaving] = useState(false);
@@ -148,6 +40,33 @@ export default function ManageContentSection() {
   const [isCommentLoading, setIsCommentLoading] = useState(false);
   const [isCommentSaving, setIsCommentSaving] = useState(false);
   const [commentFeedback, setCommentFeedback] = useState("");
+
+  const loadCourses = useCallback(async () => {
+    setIsCourseLoading(true);
+    setCourseFeedback("");
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/courses`);
+      if (!response.ok) {
+        throw new Error("Unable to load courses");
+      }
+
+      const data = await response.json();
+      const sortedCourses = Array.isArray(data)
+        ? [...data].sort((a, b) => {
+            const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
+            const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+            return bTime - aTime;
+          })
+        : [];
+
+      setCourses(sortedCourses);
+    } catch {
+      setCourseFeedback("Could not load courses from the API.");
+    } finally {
+      setIsCourseLoading(false);
+    }
+  }, [apiBaseUrl]);
 
   const loadFunFactTags = useCallback(async () => {
     setIsFunFactTagLoading(true);
@@ -253,11 +172,12 @@ export default function ManageContentSection() {
   }, [apiBaseUrl]);
 
   useEffect(() => {
+    loadCourses();
     loadFunFactTags();
     loadFunFacts();
     loadHourPackages();
     loadComments();
-  }, [loadComments, loadFunFactTags, loadFunFacts, loadHourPackages]);
+  }, [loadComments, loadCourses, loadFunFactTags, loadFunFacts, loadHourPackages]);
 
   const contentGroups = useMemo(
     () => [
@@ -292,7 +212,7 @@ export default function ManageContentSection() {
   );
 
   const activeGroup = activeModal ? contentGroups.find((group) => group.id === activeModal.groupId) : null;
-  const activeEntries = activeGroup ? (activeGroup.id === "fun-fact-tags" ? funFactTags : activeGroup.id === "fun-facts" ? funFacts : activeGroup.id === "hour-packages" ? hourPackages : activeGroup.id === "comments" ? comments : (mockEntriesByGroup[activeGroup.id] ?? [])) : [];
+  const activeEntries = activeGroup ? (activeGroup.id === "courses" ? courses : activeGroup.id === "fun-fact-tags" ? funFactTags : activeGroup.id === "fun-facts" ? funFacts : activeGroup.id === "hour-packages" ? hourPackages : activeGroup.id === "comments" ? comments : []) : [];
   const selectedEntryId = activeGroup ? (selectedEntryByGroup[activeGroup.id] ?? activeEntries[0]?.id ?? "") : "";
   const selectedEntry = activeEntries.find((entry) => entry.id === selectedEntryId);
 
@@ -309,6 +229,7 @@ export default function ManageContentSection() {
   };
 
   const openModal = (groupId, action) => {
+    setCourseFeedback("");
     setFunFactTagFeedback("");
     setFunFactFeedback("");
     setHourPackageFeedback("");
@@ -318,7 +239,7 @@ export default function ManageContentSection() {
         return current;
       }
 
-      const fallbackEntries = groupId === "fun-fact-tags" ? funFactTags : groupId === "fun-facts" ? funFacts : groupId === "hour-packages" ? hourPackages : groupId === "comments" ? comments : (mockEntriesByGroup[groupId] ?? []);
+      const fallbackEntries = groupId === "courses" ? courses : groupId === "fun-fact-tags" ? funFactTags : groupId === "fun-facts" ? funFacts : groupId === "hour-packages" ? hourPackages : groupId === "comments" ? comments : [];
       const fallbackId = fallbackEntries[0]?.id;
       return fallbackId ? { ...current, [groupId]: fallbackId } : current;
     });
@@ -347,6 +268,41 @@ export default function ManageContentSection() {
     }
 
     setActiveModal({ groupId, action });
+  };
+
+  const handleCourseSubmit = async (payload) => {
+    if (!activeGroup || activeGroup.id !== "courses") {
+      closeModal();
+      return;
+    }
+
+    setIsCourseSaving(true);
+    setCourseFeedback("");
+
+    try {
+      const url = isEditMode ? `${apiBaseUrl}/courses/${selectedEntryId}` : `${apiBaseUrl}/courses`;
+      const method = isEditMode ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody?.detail || "Unable to save course");
+      }
+
+      await loadCourses();
+      closeModal();
+    } catch (error) {
+      setCourseFeedback(error?.message || "Unable to save course.");
+    } finally {
+      setIsCourseSaving(false);
+    }
   };
 
   const handleSave = async () => {
@@ -498,6 +454,35 @@ export default function ManageContentSection() {
   const handleDelete = async () => {
     if (!activeGroup || !selectedEntryId) {
       closeModal();
+      return;
+    }
+
+    if (activeGroup.id === "courses") {
+      setIsCourseSaving(true);
+      setCourseFeedback("");
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/courses/${selectedEntryId}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody?.detail || "Unable to delete course");
+        }
+
+        await loadCourses();
+        setSelectedEntryByGroup((current) => ({
+          ...current,
+          courses: "",
+        }));
+        closeModal();
+      } catch (error) {
+        setCourseFeedback(error?.message || "Unable to delete course.");
+      } finally {
+        setIsCourseSaving(false);
+      }
+
       return;
     }
 
@@ -807,6 +792,18 @@ export default function ManageContentSection() {
     }
 
     if (isCourseEditSelection) {
+      if (isCourseLoading) {
+        return <p>Loading courses...</p>;
+      }
+
+      if (courseFeedback) {
+        return <p className="admin-content-form-error">{courseFeedback}</p>;
+      }
+
+      if (activeEntries.length === 0) {
+        return <p>No courses found. Please create one first.</p>;
+      }
+
       return (
         <div className="admin-course-picker-buttons" role="listbox" aria-label="Select course to edit">
           {activeEntries.map((entry) => (
@@ -879,7 +876,15 @@ export default function ManageContentSection() {
     }
 
     if (activeGroup.id === "courses") {
-      return <CourseForm course={isEditMode ? selectedEntry : null} />;
+      if (isCourseLoading) {
+        return <p>Loading courses...</p>;
+      }
+
+      if (isEditMode && activeEntries.length === 0) {
+        return <p>No courses found. Please create one first.</p>;
+      }
+
+      return <CourseForm course={isEditMode ? selectedEntry : null} onSubmit={handleCourseSubmit} apiBaseUrl={apiBaseUrl} />;
     }
 
     if (activeGroup.id === "hour-packages") {
@@ -939,6 +944,7 @@ export default function ManageContentSection() {
             <p>{isSelectionStep ? "Choose one item first, then confirm to continue to the edit screen." : "Fill out the information fields."}</p>
 
             {activeGroup?.id === "fun-fact-tags" && funFactTagFeedback ? <p className="admin-content-modal-feedback">{funFactTagFeedback}</p> : null}
+            {activeGroup?.id === "courses" && courseFeedback ? <p className="admin-content-modal-feedback">{courseFeedback}</p> : null}
             {activeGroup?.id === "fun-facts" && funFactFeedback ? <p className="admin-content-modal-feedback">{funFactFeedback}</p> : null}
             {activeGroup?.id === "hour-packages" && hourPackageFeedback ? <p className="admin-content-modal-feedback">{hourPackageFeedback}</p> : null}
             {activeGroup?.id === "comments" && commentFeedback ? <p className="admin-content-modal-feedback">{commentFeedback}</p> : null}
@@ -999,12 +1005,12 @@ export default function ManageContentSection() {
                 </button>
               ) : null}
               {isEditMode && !isSelectionStep ? (
-                <button type="button" className="admin-content-modal-delete" onClick={activeGroup?.id === "fun-fact-tags" || activeGroup?.id === "fun-facts" || activeGroup?.id === "hour-packages" || activeGroup?.id === "comments" ? handleDelete : closeModal} disabled={activeGroup?.id === "fun-fact-tags" ? isFunFactTagSaving : activeGroup?.id === "fun-facts" ? isFunFactSaving : activeGroup?.id === "hour-packages" ? isHourPackageSaving : activeGroup?.id === "comments" ? isCommentSaving : false}>
+                <button type="button" className="admin-content-modal-delete" onClick={activeGroup?.id === "fun-fact-tags" || activeGroup?.id === "courses" || activeGroup?.id === "fun-facts" || activeGroup?.id === "hour-packages" || activeGroup?.id === "comments" ? handleDelete : closeModal} disabled={activeGroup?.id === "fun-fact-tags" ? isFunFactTagSaving : activeGroup?.id === "courses" ? isCourseSaving : activeGroup?.id === "fun-facts" ? isFunFactSaving : activeGroup?.id === "hour-packages" ? isHourPackageSaving : activeGroup?.id === "comments" ? isCommentSaving : false}>
                   Delete
                 </button>
               ) : null}
               {!isSelectionStep ? (
-                <button type={activeGroup?.id === "fun-facts" || activeGroup?.id === "hour-packages" || activeGroup?.id === "comments" ? "submit" : "button"} form={activeGroup?.id === "fun-facts" ? "admin-fun-fact-form" : activeGroup?.id === "hour-packages" ? "admin-hour-package-form" : activeGroup?.id === "comments" ? "admin-comment-form" : undefined} className="admin-content-modal-confirm" onClick={activeGroup?.id === "fun-fact-tags" ? handleSave : activeGroup?.id === "fun-facts" || activeGroup?.id === "hour-packages" || activeGroup?.id === "comments" ? undefined : closeModal} disabled={activeGroup?.id === "fun-fact-tags" ? isFunFactTagSaving : activeGroup?.id === "fun-facts" ? isFunFactSaving : activeGroup?.id === "hour-packages" ? isHourPackageSaving : activeGroup?.id === "comments" ? isCommentSaving : false}>
+                <button type={activeGroup?.id === "courses" || activeGroup?.id === "fun-facts" || activeGroup?.id === "hour-packages" || activeGroup?.id === "comments" ? "submit" : "button"} form={activeGroup?.id === "courses" ? "admin-course-form" : activeGroup?.id === "fun-facts" ? "admin-fun-fact-form" : activeGroup?.id === "hour-packages" ? "admin-hour-package-form" : activeGroup?.id === "comments" ? "admin-comment-form" : undefined} className="admin-content-modal-confirm" onClick={activeGroup?.id === "fun-fact-tags" ? handleSave : activeGroup?.id === "courses" || activeGroup?.id === "fun-facts" || activeGroup?.id === "hour-packages" || activeGroup?.id === "comments" ? undefined : closeModal} disabled={activeGroup?.id === "fun-fact-tags" ? isFunFactTagSaving : activeGroup?.id === "courses" ? isCourseSaving : activeGroup?.id === "fun-facts" ? isFunFactSaving : activeGroup?.id === "hour-packages" ? isHourPackageSaving : activeGroup?.id === "comments" ? isCommentSaving : false}>
                   {isEditMode ? "Save" : "Create"}
                 </button>
               ) : null}
