@@ -33,6 +33,15 @@ export default function StudentDetails() {
 
   const [bookingStatusDraft, setBookingStatusDraft] = useState({});
 
+  const resetEnrollmentDraft = useCallback(() => {
+    setSelectedPackageId(student?.hourPackage?.id ? String(student.hourPackage.id) : "");
+    setSelectedCourseId(student?.activeCourseId ? String(student.activeCourseId) : "");
+    setHoursToAdd("");
+    setSelectedTeacherId("");
+    setTeacherSlots([]);
+    setSelectedSlotId("");
+  }, [student]);
+
   function getInitials(name) {
     return name
       .split(" ")
@@ -103,6 +112,10 @@ export default function StudentDetails() {
       });
       setSelectedPackageId(data.hourPackage?.id ? String(data.hourPackage.id) : "");
       setSelectedCourseId(data.activeCourseId ? String(data.activeCourseId) : "");
+      setHoursToAdd("");
+      setSelectedTeacherId("");
+      setTeacherSlots([]);
+      setSelectedSlotId("");
       setBookingStatusDraft(
         (data.bookings || []).reduce((acc, booking) => {
           acc[booking.id] = booking.status;
@@ -387,15 +400,15 @@ export default function StudentDetails() {
         <div className="student-details-info-grid">
           <label className="student-details-info-item student-details-edit-item">
             <Mail />
-            {isProfileEditing ? <input type="email" value={profileDraft.email} onChange={(event) => setProfileDraft((prev) => ({ ...prev, email: event.target.value }))} placeholder="Email" /> : <p className="student-details-info-value">{student.email || "No email"}</p>}
+            {isProfileEditing ? <input type="email" value={profileDraft.email} onChange={(event) => setProfileDraft((prev) => ({ ...prev, email: event.target.value }))} placeholder="Email" aria-label="Email" /> : <p className="student-details-info-value">{student.email || "No email"}</p>}
           </label>
           <label className="student-details-info-item student-details-edit-item">
             <Phone />
-            {isProfileEditing ? <input type="text" value={profileDraft.phone} onChange={(event) => setProfileDraft((prev) => ({ ...prev, phone: event.target.value }))} placeholder="Phone" /> : <p className="student-details-info-value">{student.phone || "No phone"}</p>}
+            {isProfileEditing ? <input type="text" value={profileDraft.phone} onChange={(event) => setProfileDraft((prev) => ({ ...prev, phone: event.target.value }))} placeholder="Phone" aria-label="Phone" /> : <p className="student-details-info-value">{student.phone || "No phone"}</p>}
           </label>
           <label className="student-details-info-item student-details-edit-item">
             <UserRound />
-            {isProfileEditing ? <input type="text" value={profileDraft.name} onChange={(event) => setProfileDraft((prev) => ({ ...prev, name: event.target.value }))} placeholder="Name" /> : <p className="student-details-info-value">{student.name || student.full_name || "No name"}</p>}
+            {isProfileEditing ? <input type="text" value={profileDraft.name} onChange={(event) => setProfileDraft((prev) => ({ ...prev, name: event.target.value }))} placeholder="Name" aria-label="Name" /> : <p className="student-details-info-value">{student.name || student.full_name || "No name"}</p>}
           </label>
           <span className="student-details-info-item">
             <GraduationCap />
@@ -429,8 +442,7 @@ export default function StudentDetails() {
               className="student-details-edit-profile-button"
               onClick={() => {
                 if (isEnrollmentEditing) {
-                  setSelectedCourseId(student.activeCourseId ? String(student.activeCourseId) : "");
-                  setHoursToAdd("");
+                  resetEnrollmentDraft();
                 }
                 setIsEnrollmentEditing((prev) => !prev);
               }}
@@ -455,60 +467,62 @@ export default function StudentDetails() {
             <p className="student-details-package-empty">No hour package purchased yet.</p>
           )}
 
-          <div className="student-details-management-grid">
-            <label>
-              Assign to course
-              <select value={selectedCourseId} onChange={(event) => setSelectedCourseId(event.target.value)} disabled={!isEnrollmentEditing}>
-                <option value="">Select course</option>
-                {courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.title}
-                  </option>
-                ))}
-              </select>
-            </label>
+          {isEnrollmentEditing ? (
+            <div className="student-details-management-grid">
+              <label>
+                Assign to course
+                <select value={selectedCourseId} onChange={(event) => setSelectedCourseId(event.target.value)}>
+                  <option value="">Select course</option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label>
-              Change hour package
-              <select value={selectedPackageId} onChange={(event) => setSelectedPackageId(event.target.value)}>
-                <option value="">Select package</option>
-                {hourPackages.map((pkg) => (
-                  <option key={pkg.id} value={pkg.id}>
-                    {pkg.name} ({pkg.hours}h)
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label>
+                Change hour package
+                <select value={selectedPackageId} onChange={(event) => setSelectedPackageId(event.target.value)}>
+                  <option value="">Select package</option>
+                  {hourPackages.map((pkg) => (
+                    <option key={pkg.id} value={pkg.id}>
+                      {pkg.name} ({pkg.hours}h)
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label>
-              Add hours
-              <input type="number" min="0" step="0.5" value={hoursToAdd} onChange={(event) => setHoursToAdd(event.target.value)} placeholder="2" disabled={!isEnrollmentEditing} />
-            </label>
+              <label>
+                Add hours
+                <input type="number" min="0" step="0.5" value={hoursToAdd} onChange={(event) => setHoursToAdd(event.target.value)} placeholder="2" aria-label="Add hours" />
+              </label>
 
-            <label>
-              Schedule class teacher
-              <select value={selectedTeacherId} onChange={(event) => setSelectedTeacherId(event.target.value)}>
-                <option value="">Select teacher</option>
-                {teachers.map((teacher) => (
-                  <option key={teacher.id} value={teacher.id}>
-                    {teacher.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label>
+                Schedule class teacher
+                <select value={selectedTeacherId} onChange={(event) => setSelectedTeacherId(event.target.value)}>
+                  <option value="">Select teacher</option>
+                  {teachers.map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label>
-              Schedule class slot
-              <select value={selectedSlotId} onChange={(event) => setSelectedSlotId(event.target.value)}>
-                <option value="">Select slot</option>
-                {teacherSlots.map((slot) => (
-                  <option key={slot.id} value={slot.id}>
-                    {slot.day} {slot.start}-{slot.end}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+              <label>
+                Schedule class slot
+                <select value={selectedSlotId} onChange={(event) => setSelectedSlotId(event.target.value)}>
+                  <option value="">Select slot</option>
+                  {teacherSlots.map((slot) => (
+                    <option key={slot.id} value={slot.id}>
+                      {slot.day} {slot.start}-{slot.end}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="student-classes">

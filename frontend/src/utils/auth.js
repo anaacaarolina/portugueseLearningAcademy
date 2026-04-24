@@ -1,5 +1,9 @@
 const AUTH_KEYS = ["access_token", "token_type", "auth_role", "has_active_enrollment"];
 
+export function getStoredAccessToken() {
+  return sessionStorage.getItem("access_token") || localStorage.getItem("access_token") || null;
+}
+
 export function getStoredAuth() {
   const sessionToken = sessionStorage.getItem("access_token");
   const localToken = localStorage.getItem("access_token");

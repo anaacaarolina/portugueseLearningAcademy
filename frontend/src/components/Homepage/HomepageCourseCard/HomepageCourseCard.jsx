@@ -1,7 +1,7 @@
 import "./HomepageCourseCard.css";
 import { Link } from "react-router-dom";
 
-export default function HomepageCourseCard({ title, level, summary, to = "/course" }) {
+export default function HomepageCourseCard({ title, level, summary, to = "/courses" }) {
   return (
     <Link to={to} className="course-card-link">
       <div className="course-card">

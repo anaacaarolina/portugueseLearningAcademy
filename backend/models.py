@@ -125,6 +125,22 @@ class CourseSchedule(Base):
     day_of_week = Column(Enum(DayOfWeek))
     start_time = Column(Time)
     end_time = Column(Time)
+    effective_from = Column(Date, nullable=True)
+    effective_to = Column(Date, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+
+class CourseScheduleException(Base):
+    __tablename__ = "course_schedule_exceptions"
+    id = Column(BigInteger, primary_key=True, index=True)
+    course_id = Column(BigInteger, ForeignKey("courses.id"), nullable=False)
+    course_schedule_id = Column(BigInteger, ForeignKey("course_schedules.id"), nullable=True)
+    exception_date = Column(Date, nullable=False)
+    start_time = Column(Time, nullable=True)
+    end_time = Column(Time, nullable=True)
+    is_cancelled = Column(Boolean, default=False)
+    reason = Column(Text, nullable=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -244,7 +260,7 @@ class Availability(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     teacher_id = Column(Integer, ForeignKey("teachers.id"))
-    day_of_week = Column(String)
+    slot_date = Column(Date)
     start_time = Column(String)
     end_time = Column(String)
     is_available = Column(Boolean, default=True)

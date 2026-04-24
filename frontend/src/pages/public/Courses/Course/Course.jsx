@@ -1,56 +1,161 @@
 import "./Course.css";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { Calendar, Clock, Award, BookOpen, UsersRound } from "lucide-react";
 import CourseDetailCard from "../../../../components/Course/CourseDetailCard/CourseDetailCard";
 
 export default function Course() {
-  const details = [
-    {
-      id: 1,
-      icon: Clock,
-      title: "Duration",
-      text: "12 weeks with two sessions per week.",
-    },
-    {
-      id: 2,
-      icon: Award,
-      title: "Level",
-      text: "Intermediate (B1-B2).",
-    },
-    {
-      id: 3,
-      icon: UsersRound,
-      title: "Class Size",
-      text: "Small groups with up to 10 students.",
-    },
-    {
-      id: 4,
-      icon: BookOpen,
-      title: "Model",
-      text: "Live online classes with practical activities.",
-    },
-    {
-      id: 5,
-      icon: Calendar,
-      title: "Start Date",
-      text: "April 8, 2026.",
-    },
-    {
-      id: 6,
-      icon: Calendar,
-      title: "End Date",
-      text: "June 30, 2026.",
-    },
-  ];
+  const { courseSlug } = useParams();
+  const [course, setCourse] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const learningPoints = ["Master intermediate Portuguese grammar structures and verb conjugations", "Engage in conversations about everyday topics with confidence", "Understand and use idiomatic expressions in context", "Read and comprehend Portuguese texts, articles, and short stories", "Write coherent paragraphs and emails in Portuguese", "Discuss Portuguese culture, traditions, and current events", "Develop listening skills through authentic audio materials", "Build vocabulary for travel, work, and social situations"];
+  const toSlug = (value) =>
+    String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCourse = async () => {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const response = await fetch("/api/courses");
+        if (!response.ok) {
+          throw new Error("Unable to load course");
+        }
+
+        const data = await response.json();
+        const courses = Array.isArray(data) ? data : [];
+        const selectedCourse = courseSlug ? courses.find((item) => toSlug(item?.title) === courseSlug) : courses[0];
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCourse(selectedCourse || null);
+      } catch {
+        if (isMounted) {
+          setCourse(null);
+          setErrorMessage("Could not load course from the API.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadCourse();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [courseSlug]);
+
+  const formatDate = (value) => {
+    if (!value) {
+      return "Flexible Start";
+    }
+
+    return new Date(value).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const details = useMemo(() => {
+    if (!course) {
+      return [];
+    }
+
+    return [
+      {
+        id: 1,
+        icon: Clock,
+        title: "Duration",
+        text: course.total_hours ? `${course.total_hours} total hours.` : "Flexible duration.",
+      },
+      {
+        id: 2,
+        icon: Award,
+        title: "Level",
+        text: course.level ? `${String(course.level).toUpperCase()} level.` : "All levels.",
+      },
+      {
+        id: 3,
+        icon: UsersRound,
+        title: "Class Size",
+        text: course.max_students ? `Up to ${course.max_students} students.` : "Class size defined by demand.",
+      },
+      {
+        id: 4,
+        icon: BookOpen,
+        title: "Model",
+        text: `${course.regime || "in-person"}`,
+      },
+      {
+        id: 5,
+        icon: Calendar,
+        title: "Start Date",
+        text: `${formatDate(course.start_date)}.`,
+      },
+      {
+        id: 6,
+        icon: Calendar,
+        title: "End Date",
+        text: `${course.end_date ? formatDate(course.end_date) : "To be announced"}.`,
+      },
+    ];
+  }, [course]);
+
+  const learningPoints = useMemo(() => {
+    if (!course) {
+      return [];
+    }
+
+    const title = course.title || "this course";
+    const level = course.level ? String(course.level).toUpperCase() : "all levels";
+    const type = course.type || "group";
+
+    return [
+      `Build confidence in ${title.toLowerCase()} communication contexts.`,
+      `Develop practical Portuguese skills aligned with ${level}.`,
+      `Practice through ${type} sessions focused on speaking and comprehension.`,
+    ];
+  }, [course]);
+
+  const subtitle = useMemo(() => {
+    if (!course) {
+      return "Course";
+    }
+
+    const typeLabel = course.type ? String(course.type).toUpperCase() : "GROUP";
+    const levelLabel = course.level ? String(course.level).toUpperCase() : "ALL LEVELS";
+    return `${typeLabel} • ${levelLabel}`;
+  }, [course]);
+
+  const courseTitle = course?.title || "Course";
+  const courseDescription = course?.description || "Course details will be available soon.";
 
   return (
     <div className="course-page">
+      {isLoading ? <p>Loading course...</p> : null}
+      {!isLoading && errorMessage ? <p>{errorMessage}</p> : null}
+      {!isLoading && !errorMessage && !course ? <p>Course not found.</p> : null}
+
       <section className="course-intro-section">
-        <p className="course-subtitle">Intermediate Course</p>
-        <h1 className="course-title">Portuguese B1 - Group Course</h1>
-        <p className="course-description">Take your Portuguese to the next level with our comprehensive intermediate course. Perfect for students who have completed A2 or have basic conversation skills.</p>
+        <p className="course-subtitle">{subtitle}</p>
+        <h1 className="course-title">{courseTitle}</h1>
+        <p className="course-description">{courseDescription}</p>
       </section>
 
       <section className="course-details-section">
@@ -70,25 +175,17 @@ export default function Course() {
         </ul>
       </section>
 
-      <section className="course-teacher-section">
-        <h2>Meet Your Teacher</h2>
-        <article className="teacher-card">
-          <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=600&q=80" alt="Teacher Sofia Almeida" className="teacher-card-image" />
-          <div className="teacher-card-content">
-            <h3>Professor Sofia Rodrigues</h3>
-            <p className="teacher-card-subtitle">Portuguese Language Specialist</p>
-            <p className="teacher-card-bio">
-              Sofia has been teaching Portuguese for over 12 years and holds a Master's degree in Portuguese Linguistics from the University of Lisbon. She specializes in communicative teaching methods and has helped hundreds of students achieve fluency. <br />
-              Born and raised in Porto, Sofia brings authentic cultural insights to every class. Her passion for teaching and patient approach make even the most challenging grammar concepts accessible and enjoyable
-            </p>
-          </div>
-        </article>
-      </section>
-
       <section className="course-cta-section">
         <h2>Ready to Join This Course?</h2>
         <p>Secure your spot now and start learning Portuguese with a clear path and expert guidance.</p>
-        <Link to="/enrollment" className="button course-cta-button">
+        <Link
+          to="/enrollment"
+          state={{
+            preselectedCourseId: course?.id ?? null,
+            preselectedCourseType: course?.type ?? null,
+          }}
+          className="button course-cta-button"
+        >
           Enroll Now
         </Link>
       </section>

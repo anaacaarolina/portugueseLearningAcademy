@@ -4,10 +4,12 @@ from sqlalchemy import text, inspect
 from database import get_db
 from models import UserRole
 from schemas import UserCreate, UserResponse, Token
-from fastapi.security import OAuth2PasswordRequestForm
-from Services.auth_services import get_password_hash, verify_password, create_access_token
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from Services.auth_services import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM
+from jose import jwt, JWTError
 
 router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def _users_columns(db: Session) -> set[str]:
@@ -26,6 +28,57 @@ def _fetch_user_by_email(db: Session, email: str, columns: set[str]):
 
     query = text(f"SELECT {', '.join(selected)} FROM users WHERE email = :email LIMIT 1")
     return db.execute(query, {"email": email}).mappings().first()
+
+
+def _get_email_from_token(token: str) -> str:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
+
+    email = payload.get("sub")
+    if not email:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+
+    return str(email)
+
+
+@router.get("/me")
+def get_current_user_profile(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    email = _get_email_from_token(token)
+    columns = _users_columns(db)
+    user = _fetch_user_by_email(db, email, columns)
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    has_active_enrollment = False
+    inspector = inspect(db.bind)
+    enrollment_columns = set()
+    if "enrollments" in inspector.get_table_names():
+        enrollment_columns = {column["name"] for column in inspector.get_columns("enrollments")}
+
+    if {"user_id", "status"}.issubset(enrollment_columns):
+        active_enrollment_query = text(
+            "SELECT 1 FROM enrollments WHERE user_id = :user_id AND status = :status LIMIT 1"
+        )
+        has_active_enrollment = (
+            db.execute(active_enrollment_query, {"user_id": user["id"], "status": "active"}).scalar()
+            is not None
+        )
+
+    db_role = (user.get("role") or "student").lower()
+    if db_role == UserRole.admin.value:
+        user_role = UserRole.admin.value
+    else:
+        user_role = "student" if has_active_enrollment else "unrolled_student"
+
+    return {
+        "id": user["id"],
+        "email": user["email"],
+        "user_role": user_role,
+        "has_active_enrollment": has_active_enrollment,
+    }
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
@@ -130,3 +183,51 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         "user_role": user_role,
         "has_active_enrollment": has_active_enrollment,
     }
+
+
+@router.post("/change-password")
+def change_password(body: dict, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    current_password = str(body.get("current_password") or "")
+    new_password = str(body.get("new_password") or "")
+
+    if not current_password or not new_password:
+        raise HTTPException(status_code=400, detail="current_password and new_password are required")
+
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters long")
+
+    email = _get_email_from_token(token)
+    columns = _users_columns(db)
+    user = _fetch_user_by_email(db, email, columns)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    stored_hash = user.get("hashed_password") or user.get("password") or ""
+    password_valid = verify_password(current_password, stored_hash)
+    if not password_valid:
+        password_valid = stored_hash == current_password
+
+    if not password_valid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is incorrect")
+
+    next_hash = get_password_hash(new_password)
+    set_clauses = []
+    params = {"id": user["id"]}
+
+    if "hashed_password" in columns:
+        set_clauses.append("hashed_password = :hashed_password")
+        params["hashed_password"] = next_hash
+
+    if "password" in columns:
+        set_clauses.append("password = :password")
+        params["password"] = next_hash
+
+    if not set_clauses:
+        raise HTTPException(status_code=500, detail="No password field found in users table")
+
+    query = text(f"UPDATE users SET {', '.join(set_clauses)} WHERE id = :id")
+    db.execute(query, params)
+    db.commit()
+
+    return {"message": "Password updated successfully"}

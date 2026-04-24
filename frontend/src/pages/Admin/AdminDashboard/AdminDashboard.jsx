@@ -3,8 +3,9 @@ import { BookOpen, Euro, Target, Users, X } from "lucide-react";
 import KpiCard from "../../../components/Admin/KpiCard/KpiCard";
 import ManageContentSection from "../../../components/Admin/ManageContentSection/ManageContentSection";
 import StudentsTable from "../../../components/Admin/StudentsTable/StudentsTable";
+import StudentForm from "../../../components/Admin/StudentsTable/StudentForm/StudentForm";
 import TeacherForm from "../../../components/Admin/TeachersTables/TeacherForm/TeacherForm";
-import { useNavigate } from "react-router-dom";
+import TeachersTable from "../../../components/Admin/TeachersTables/TeachersTable/TeachersTable";
 import { useState, useEffect } from "react";
 
 const kpis = [
@@ -35,38 +36,40 @@ const kpis = [
 ];
 
 export default function AdminDashboard() {
-  const navigate = useNavigate();
-
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
-  const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [availability, setAvailability] = useState([]);
-  const [newSlot, setNewSlot] = useState({
-    day: "Monday",
-    start: "",
-    end: "",
-  });
-
-  const [detailsTeacher, setDetailsTeacher] = useState(null);
-  const [teacherAvailability, setTeacherAvailability] = useState([]);
   const [showTeacherModal, setShowTeacherModal] = useState(false);
+  const [showStudentModal, setShowStudentModal] = useState(false);
 
-  const tutorDetails = async (teacherId) => {
-    setDetailsTeacher(teacherId);
-
+  const loadStudents = async () => {
     try {
-      const res = await fetch(`/api/teachers/${teacherId}/availability`);
-
-      if (!res.ok) {
-        const text = await res.text();
+      const response = await fetch("/api/students");
+      if (!response.ok) {
+        const text = await response.text();
         console.error("SERVER ERROR:", text);
-        throw new Error("Failed to fetch teacher availability");
+        throw new Error("Failed to fetch students");
       }
 
-      const data = await res.json();
-      setTeacherAvailability(data);
-    } catch (err) {
-      console.error(err);
+      const data = await response.json();
+      setStudents(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const loadTeachers = async () => {
+    try {
+      const response = await fetch("/api/teachers");
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("SERVER ERROR:", text);
+        throw new Error("Failed to fetch teachers");
+      }
+
+      const data = await response.json();
+      setTeachers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -77,14 +80,30 @@ export default function AdminDashboard() {
       method: "DELETE",
     });
 
-    window.location.reload();
+    await loadTeachers();
   };
 
-  const groupedAvailability = teacherAvailability.reduce((acc, slot) => {
-    if (!acc[slot.day]) acc[slot.day] = [];
-    acc[slot.day].push(slot);
-    return acc;
-  }, {});
+  const handleSaveTeacherAvailability = async (teacherId, availabilitySlots) => {
+    if (!teacherId) {
+      return;
+    }
+
+    const response = await fetch(`/api/teachers/${teacherId}/availability`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(availabilitySlots),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("SERVER ERROR:", text);
+      throw new Error("Failed to save availability");
+    }
+
+    alert("Availability saved!");
+  };
 
   const handleTeacherSubmit = async (payload) => {
     try {
@@ -101,44 +120,60 @@ export default function AdminDashboard() {
       }
 
       setShowTeacherModal(false);
-
-      const res2 = await fetch("/api/teachers");
-      if (res2.ok) {
-        const data = await res2.json();
-        setTeachers(data);
-      }
+      await loadTeachers();
     } catch (err) {
       console.error(err);
       alert("Error creating teacher: " + err.message);
     }
   };
 
-  useEffect(() => {
-    fetch("/api/students")
-      .then(async (res) => {
-        if (!res.ok) {
-          const text = await res.text();
+  const handleStudentSubmit = async (payload) => {
+    try {
+      const { courseId, ...studentPayload } = payload;
+
+      const response = await fetch("/api/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(studentPayload),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("SERVER ERROR:", text);
+        throw new Error("Failed to create student");
+      }
+
+      const created = await response.json();
+
+      if (courseId && created?.id) {
+        const assignResponse = await fetch(`/api/students/${created.id}/course`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ courseId }),
+        });
+
+        if (!assignResponse.ok) {
+          const text = await assignResponse.text();
           console.error("SERVER ERROR:", text);
-          throw new Error("Failed to fetch students");
+          throw new Error("Student created but course assignment failed");
         }
-        return res.json();
-      })
-      .then(setStudents)
-      .catch(console.error);
+      }
+
+      await loadStudents();
+      setShowStudentModal(false);
+      alert(`Student created successfully. Temporary password: ${created?.temporary_password || "PLA2026"}`);
+    } catch (error) {
+      console.error(error);
+      alert("Error creating student: " + error.message);
+    }
+  };
+
+  useEffect(() => {
+    loadStudents();
   }, []);
 
   useEffect(() => {
-    fetch("/api/teachers")
-      .then(async (res) => {
-        if (!res.ok) {
-          const text = await res.text();
-          console.error("SERVER ERROR:", text);
-          throw new Error("Failed to fetch teachers");
-        }
-        return res.json();
-      })
-      .then(setTeachers)
-      .catch(console.error);
+    loadTeachers();
   }, []);
 
   return (
@@ -156,122 +191,7 @@ export default function AdminDashboard() {
       </section>
 
       <section>
-        <h2>Teachers</h2>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Course</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {teachers.map((teacher) => (
-              <tr key={teacher.id}>
-                <td>{teacher.name}</td>
-                <td>{teacher.course}</td>
-                <td>
-                  <button onClick={() => setSelectedTeacher(teacher.id)}>Set Availability</button>
-                  <button onClick={() => tutorDetails(teacher.id)}>view details</button>
-                  <button onClick={() => handleDelete(teacher.id)}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {selectedTeacher && (
-          <div className="modal">
-            <div className="modal-content">
-              <h3>Set Availability</h3>
-              <select value={newSlot.day} onChange={(e) => setNewSlot({ ...newSlot, day: e.target.value })}>
-                {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
-                  <option key={day}>{day}</option>
-                ))}
-              </select>
-
-              <input type="time" value={newSlot.start} onChange={(e) => setNewSlot({ ...newSlot, start: e.target.value })} />
-
-              <input type="time" value={newSlot.end} onChange={(e) => setNewSlot({ ...newSlot, end: e.target.value })} />
-
-              <button
-                onClick={() => {
-                  setAvailability([...availability, newSlot]);
-                  setNewSlot({ day: "Monday", start: "", end: "" });
-                }}
-              >
-                Add slot
-              </button>
-              <button
-                onClick={async () => {
-                  if (!selectedTeacher) {
-                    console.error("No teacher selected");
-                    return;
-                  }
-                  try {
-                    const res = await fetch(`/api/teachers/${selectedTeacher}/availability`, {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify(availability),
-                    });
-
-                    if (!res.ok) {
-                      const text = await res.text();
-                      console.error("SERVER ERROR:", text);
-                      throw new Error("Failed to save availability");
-                    }
-
-                    alert("Availability saved!");
-                    setSelectedTeacher(null);
-                    setAvailability([]);
-                  } catch (err) {
-                    console.error(err);
-                  }
-                }}
-              >
-                Save Availability
-              </button>
-              <ul>
-                {availability.map((slot, index) => (
-                  <li key={index}>
-                    {slot.day} - {slot.start} to {slot.end}
-                    <button onClick={() => setAvailability(availability.filter((_, i) => i !== index))}>Remove</button>
-                  </li>
-                ))}
-              </ul>
-              <button onClick={() => setSelectedTeacher(null)}>Close</button>
-            </div>
-          </div>
-        )}
-        {detailsTeacher && (
-          <div className="modal">
-            <div className="modal-content">
-              <h3>Teacher Availability</h3>
-
-              {Object.keys(groupedAvailability).length === 0 ? (
-                <p>No availability set</p>
-              ) : (
-                Object.entries(groupedAvailability).map(([day, slots]) => (
-                  <div key={day}>
-                    <strong>{day}</strong>
-                    <ul>
-                      {slots.map((slot, index) => (
-                        <li key={index}>
-                          {slot.start} - {slot.end}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))
-              )}
-
-              <button onClick={() => setDetailsTeacher(null)}>Close</button>
-            </div>
-          </div>
-        )}
+        <TeachersTable teachers={teachers} onDeleteTeacher={handleDelete} onSaveAvailability={handleSaveTeacherAvailability} />
 
         <div className="admin-manage-content-actions">
           <button type="button" onClick={() => setShowTeacherModal(true)}>
@@ -304,7 +224,32 @@ export default function AdminDashboard() {
       <section className="admin-students-wrapper-section">
         <StudentsTable students={students} />
 
-        <button onClick={() => navigate("/create-student")}>+ Create Student</button>
+        <div className="admin-manage-content-actions">
+          <button type="button" onClick={() => setShowStudentModal(true)}>
+            Create Student
+          </button>
+        </div>
+
+        {showStudentModal && (
+          <div className="admin-content-modal-backdrop" role="presentation" onClick={() => setShowStudentModal(false)}>
+            <div className="admin-content-modal" role="dialog" aria-modal="true" aria-label="Create Student" onClick={(event) => event.stopPropagation()}>
+              <button type="button" className="admin-content-modal-close" onClick={() => setShowStudentModal(false)} aria-label="Close modal">
+                <X size={18} aria-hidden="true" />
+              </button>
+              <h3>Create New Student</h3>
+              <p>Fill out the information fields.</p>
+              <StudentForm onSubmit={handleStudentSubmit} />
+              <div className="admin-content-modal-actions">
+                <button type="button" onClick={() => setShowStudentModal(false)} className="admin-content-modal-cancel">
+                  Cancel
+                </button>
+                <button type="submit" form="admin-student-form" className="admin-content-modal-confirm">
+                  Create Student
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="admin-manage-wrapper-section">

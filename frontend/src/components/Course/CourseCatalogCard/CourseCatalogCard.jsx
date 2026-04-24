@@ -7,8 +7,9 @@ const typeLabelMap = {
   individual: "Individual",
 };
 
-export default function CourseCatalogCard({ level, title, description, weeks, startDate, location, type }) {
+export default function CourseCatalogCard({ slug, level, title, description, weeks, startDate, location, type }) {
   const courseTypeLabel = typeLabelMap[type] ?? type;
+  const detailsUrl = slug ? `/courses/${slug}` : "/courses";
 
   return (
     <article className="course-catalog-card">
@@ -21,10 +22,12 @@ export default function CourseCatalogCard({ level, title, description, weeks, st
         <p className="course-catalog-card-description">{description}</p>
 
         <ul className="course-catalog-card-meta-list">
-          <li>
-            <Clock3 size={18} aria-hidden="true" />
-            <span>{weeks}</span>
-          </li>
+          {weeks ? (
+            <li>
+              <Clock3 size={18} aria-hidden="true" />
+              <span>{weeks}</span>
+            </li>
+          ) : null}
           <li>
             <CalendarDays size={18} aria-hidden="true" />
             <span>{startDate}</span>
@@ -39,7 +42,7 @@ export default function CourseCatalogCard({ level, title, description, weeks, st
           </li>
         </ul>
 
-        <Link to="/course" className="button course-catalog-card-button">
+        <Link to={detailsUrl} className="button course-catalog-card-button">
           Learn More
         </Link>
       </div>

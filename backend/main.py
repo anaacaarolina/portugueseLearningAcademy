@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from sqlalchemy import inspect, text
 from decimal import Decimal
+from datetime import date, timedelta
+import os
 
 from database import SessionLocal, engine
 import models
@@ -13,6 +15,7 @@ from routers.comments import router as comments_router
 from routers.fun_facts import router as fun_facts_router
 from routers.fun_fact_tags import router as fun_fact_tags_router
 from routers.hour_packages import router as hour_packages_router
+from Services.auth_services import get_password_hash
 
 import uuid
 
@@ -37,6 +40,8 @@ app.include_router(comments_router, prefix="/comments", tags=["Comments"])
 app.include_router(fun_facts_router, prefix="/fun-facts", tags=["Fun Facts"])
 app.include_router(fun_fact_tags_router, prefix="/fun-fact-tags", tags=["Fun Fact Tags"])
 app.include_router(hour_packages_router, prefix="/hour-packages", tags=["Hour Packages"])
+
+DEFAULT_STUDENT_PASSWORD = os.getenv("DEFAULT_STUDENT_PASSWORD", "PLA2026")
 
 
 def get_db():
@@ -123,6 +128,61 @@ def _get_active_enrollment(db: Session, student_id: int):
         .order_by(models.Enrollment.enrolled_at.desc().nullslast(), models.Enrollment.id.desc())
         .first()
     )
+
+
+def _parse_slot_date(value):
+    if not value:
+        return None
+
+    if isinstance(value, date):
+        return value
+
+    if isinstance(value, str):
+        try:
+            return date.fromisoformat(value)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid date format: {value}. Expected YYYY-MM-DD") from exc
+
+    raise HTTPException(status_code=400, detail="Invalid date value")
+
+
+def _seed_default_teacher_availability(db: Session, teacher_id: int, horizon_days: int = 56):
+    valid_existing_count = (
+        db.query(models.Availability)
+        .filter(
+            models.Availability.teacher_id == teacher_id,
+            models.Availability.slot_date.isnot(None),
+        )
+        .count()
+    )
+    if valid_existing_count > 0:
+        return
+
+    db.query(models.Availability).filter(
+        models.Availability.teacher_id == teacher_id,
+        models.Availability.slot_date.is_(None),
+    ).delete()
+
+    today = date.today()
+    default_slots = []
+
+    for offset in range(horizon_days):
+        slot_date = today + timedelta(days=offset)
+        if slot_date.weekday() >= 5:
+            continue
+
+        default_slots.append(
+            models.Availability(
+                teacher_id=teacher_id,
+                slot_date=slot_date,
+                start_time="09:00",
+                end_time="17:00",
+                is_available=True,
+            )
+        )
+
+    if default_slots:
+        db.add_all(default_slots)
 
 
 def _build_hours_summary(enrollment):
@@ -241,7 +301,8 @@ def get_student(student_id: int, db: Session = Depends(get_db)):
         result.append({
             "id": b.id,
             "status": b.status.value if hasattr(b.status, "value") else str(b.status),
-            "day": availability.day_of_week,
+            "date": availability.slot_date.isoformat() if availability.slot_date else None,
+            "day": availability.slot_date.strftime("%a") if availability.slot_date else None,
             "start": availability.start_time,
             "end": availability.end_time,
             "teacherId": availability.teacher_id
@@ -290,6 +351,15 @@ def list_courses_api(db: Session = Depends(get_db)):
         {
             "id": course.id,
             "title": course.title,
+            "description": course.description,
+            "level": course.level.value if hasattr(course.level, "value") else str(course.level),
+            "type": course.type.value if hasattr(course.type, "value") else str(course.type),
+            "start_date": course.start_date.isoformat() if course.start_date else None,
+            "end_date": course.end_date.isoformat() if course.end_date else None,
+            "total_hours": float(course.total_hours) if course.total_hours is not None else None,
+            "max_students": course.max_students,
+            "regime": course.regime.value if hasattr(course.regime, "value") else str(course.regime),
+            "location": course.location,
             "status": course.status.value if hasattr(course.status, "value") else str(course.status),
         }
         for course in courses
@@ -511,6 +581,7 @@ def create_student(data: dict, db: Session = Depends(get_db)):
         name=data["name"],
         email=data["email"],
         phone=data["phone"],
+        password=get_password_hash(DEFAULT_STUDENT_PASSWORD),
         role=models.UserRole.student,
         is_active=bool(is_active),
         notes=data.get("notes", ""),
@@ -520,7 +591,11 @@ def create_student(data: dict, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(student)
 
-    return {"message": "Student created", "id": student.id}
+    return {
+        "message": "Student created",
+        "id": student.id,
+        "temporary_password": DEFAULT_STUDENT_PASSWORD,
+    }
 
 @app.delete("/api/students/{id}")
 def delete_student(id: int, db: Session = Depends(get_db)):
@@ -542,11 +617,16 @@ def create_teacher(data: dict, db: Session = Depends(get_db)):
     teacher = models.Teacher(
         name=data["name"],
         email=data["email"],
-        course=data["course"],
+        bio=data.get("bio"),
+        photo_url=data.get("photo_url"),
+        course=data.get("course"),
     )
     db.add(teacher)
     db.commit()
     db.refresh(teacher)
+
+    _seed_default_teacher_availability(db, teacher.id)
+    db.commit()
 
     return {"id": teacher.id}
 
@@ -554,11 +634,26 @@ def create_teacher(data: dict, db: Session = Depends(get_db)):
 def get_teachers(db: Session = Depends(get_db)):
     teachers = db.query(models.Teacher).all()
 
+    teacher_ids = [teacher.id for teacher in teachers]
+    course_rows = (
+        db.query(models.Course.teacher_id, models.Course.title)
+        .filter(models.Course.teacher_id.in_(teacher_ids))
+        .all()
+        if teacher_ids
+        else []
+    )
+
+    course_map: dict[int, list[str]] = {}
+    for row in course_rows:
+        if row.teacher_id is None:
+            continue
+        course_map.setdefault(int(row.teacher_id), []).append(row.title)
+
     return [
         {
             "id": t.id,
             "name": t.name,
-            "course": t.course,
+            "course": ", ".join(course_map.get(int(t.id), [])) or t.course,
         }
         for t in teachers
     ]
@@ -581,11 +676,19 @@ def set_availability(teacher_id: int, data: list = Body(...), db: Session = Depe
     db.query(models.Availability).filter(models.Availability.teacher_id == teacher_id).delete()
 
     for slot in data:
+        slot_date = _parse_slot_date(slot.get("date"))
+        if slot_date is None:
+            raise HTTPException(status_code=400, detail="Each slot must include a valid date")
+
+        start_time = slot.get("start") or "09:00"
+        end_time = slot.get("end") or "17:00"
+
         availability = models.Availability(
             teacher_id=teacher_id,
-            day_of_week=slot["day"],
-            start_time=slot["start"],
-            end_time=slot["end"]
+            slot_date=slot_date,
+            start_time=start_time,
+            end_time=end_time,
+            is_available=bool(slot.get("isAvailable", True)),
         )
         db.add(availability)
     db.commit()
@@ -594,12 +697,24 @@ def set_availability(teacher_id: int, data: list = Body(...), db: Session = Depe
 
 @app.get("/api/teachers/{teacher_id}/availability")
 def get_availability(teacher_id: int, db: Session = Depends(get_db)):
-    slots = db.query(models.Availability).filter(models.Availability.teacher_id == teacher_id).all()
+    _seed_default_teacher_availability(db, teacher_id)
+    db.commit()
+
+    slots = (
+        db.query(models.Availability)
+        .filter(
+            models.Availability.teacher_id == teacher_id,
+            models.Availability.slot_date.isnot(None),
+        )
+        .order_by(models.Availability.slot_date.asc(), models.Availability.start_time.asc())
+        .all()
+    )
     return [
         {
-            "day": a.day_of_week,
+            "date": a.slot_date.isoformat() if a.slot_date else None,
             "start": a.start_time,
-            "end": a.end_time
+            "end": a.end_time,
+            "isAvailable": bool(a.is_available),
         }
         for a in slots
     ]
@@ -608,13 +723,15 @@ def get_availability(teacher_id: int, db: Session = Depends(get_db)):
 def get_available_slots(teacher_id: int, db: Session = Depends(get_db)):
     slots = db.query(models.Availability).filter(
         models.Availability.teacher_id == teacher_id,
-        models.Availability.is_available == True
+        models.Availability.slot_date.isnot(None),
+        models.Availability.is_available == True,
     ).all()
 
     return [
         {
             "id": s.id,
-            "day": s.day_of_week,
+            "date": s.slot_date.isoformat() if s.slot_date else None,
+            "day": s.slot_date.strftime("%a") if s.slot_date else None,
             "start": s.start_time,
             "end": s.end_time
         }

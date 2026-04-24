@@ -13,6 +13,24 @@ const emptyCourse = {
   location: "",
   teacherId: "",
   status: "draft",
+  weeklySchedule: [],
+  scheduleExceptions: [],
+};
+
+const emptyWeeklyScheduleItem = {
+  dayOfWeek: "Mon",
+  startTime: "09:00",
+  endTime: "10:00",
+  effectiveFrom: "",
+  effectiveTo: "",
+};
+
+const emptyScheduleExceptionItem = {
+  exceptionDate: "",
+  startTime: "09:00",
+  endTime: "10:00",
+  isCancelled: false,
+  reason: "",
 };
 
 const levelOptions = ["A1", "A2", "B1", "B2", "C1", "C2", "Business"];
@@ -32,6 +50,32 @@ const statusOptions = [
   { value: "completed", label: "Completed" },
 ];
 
+const dayOptions = [
+  { value: "Mon", label: "Monday" },
+  { value: "Tue", label: "Tuesday" },
+  { value: "Wed", label: "Wednesday" },
+  { value: "Thu", label: "Thursday" },
+  { value: "Fri", label: "Friday" },
+  { value: "Sat", label: "Saturday" },
+  { value: "Sun", label: "Sunday" },
+];
+
+function normalizeTimeValue(value) {
+  if (!value) {
+    return "";
+  }
+
+  return String(value).slice(0, 5);
+}
+
+function normalizeDateValue(value) {
+  if (!value) {
+    return "";
+  }
+
+  return String(value).slice(0, 10);
+}
+
 function normalizeCourse(course) {
   const typeValue = course?.type ?? course?.model ?? emptyCourse.type;
 
@@ -49,6 +93,24 @@ function normalizeCourse(course) {
     location: course?.location ?? "",
     teacherId: course?.teacher_id ?? course?.teacherId ?? "",
     status: course?.status ?? emptyCourse.status,
+    weeklySchedule: Array.isArray(course?.weekly_schedule)
+      ? course.weekly_schedule.map((item) => ({
+          dayOfWeek: item?.day_of_week ?? "Mon",
+          startTime: normalizeTimeValue(item?.start_time),
+          endTime: normalizeTimeValue(item?.end_time),
+          effectiveFrom: normalizeDateValue(item?.effective_from),
+          effectiveTo: normalizeDateValue(item?.effective_to),
+        }))
+      : [],
+    scheduleExceptions: Array.isArray(course?.schedule_exceptions)
+      ? course.schedule_exceptions.map((item) => ({
+          exceptionDate: normalizeDateValue(item?.exception_date),
+          startTime: normalizeTimeValue(item?.start_time),
+          endTime: normalizeTimeValue(item?.end_time),
+          isCancelled: Boolean(item?.is_cancelled),
+          reason: item?.reason ?? "",
+        }))
+      : [],
   };
 }
 
@@ -69,6 +131,8 @@ export default function CourseForm({ course, onSubmit, apiBaseUrl }) {
   const [locationValue, setLocationValue] = useState(draftCourse.location);
   const [teacherIdValue, setTeacherIdValue] = useState(draftCourse.teacherId ? String(draftCourse.teacherId) : "");
   const [statusValue, setStatusValue] = useState(draftCourse.status);
+  const [weeklyScheduleValue, setWeeklyScheduleValue] = useState(draftCourse.weeklySchedule);
+  const [scheduleExceptionsValue, setScheduleExceptionsValue] = useState(draftCourse.scheduleExceptions);
 
   useEffect(() => {
     setTitleValue(draftCourse.title);
@@ -83,6 +147,8 @@ export default function CourseForm({ course, onSubmit, apiBaseUrl }) {
     setLocationValue(draftCourse.location);
     setTeacherIdValue(draftCourse.teacherId ? String(draftCourse.teacherId) : "");
     setStatusValue(draftCourse.status);
+    setWeeklyScheduleValue(draftCourse.weeklySchedule);
+    setScheduleExceptionsValue(draftCourse.scheduleExceptions);
   }, [draftCourse]);
 
   useEffect(() => {
@@ -125,6 +191,26 @@ export default function CourseForm({ course, onSubmit, apiBaseUrl }) {
   function handleSubmit(event) {
     event.preventDefault();
 
+    const normalizedWeeklySchedule = weeklyScheduleValue
+      .filter((item) => item.dayOfWeek && item.startTime && item.endTime)
+      .map((item) => ({
+        day_of_week: item.dayOfWeek,
+        start_time: item.startTime,
+        end_time: item.endTime,
+        effective_from: item.effectiveFrom || null,
+        effective_to: item.effectiveTo || null,
+      }));
+
+    const normalizedScheduleExceptions = scheduleExceptionsValue
+      .filter((item) => item.exceptionDate && (item.isCancelled || (item.startTime && item.endTime)))
+      .map((item) => ({
+        exception_date: item.exceptionDate,
+        start_time: item.isCancelled ? null : item.startTime,
+        end_time: item.isCancelled ? null : item.endTime,
+        is_cancelled: item.isCancelled,
+        reason: item.reason.trim() || null,
+      }));
+
     const payload = {
       title: titleValue.trim(),
       description: descriptionValue.trim(),
@@ -138,10 +224,40 @@ export default function CourseForm({ course, onSubmit, apiBaseUrl }) {
       location: locationValue.trim(),
       teacher_id: teacherIdValue === "" ? null : Number(teacherIdValue),
       status: statusValue,
+      weekly_schedule: typeValue === "group" ? normalizedWeeklySchedule : [],
+      schedule_exceptions: typeValue === "group" ? normalizedScheduleExceptions : [],
     };
 
     onSubmit?.(payload);
   }
+
+  const addWeeklyScheduleItem = () => {
+    setWeeklyScheduleValue((current) => [...current, { ...emptyWeeklyScheduleItem }]);
+  };
+
+  const updateWeeklyScheduleItem = (index, field, value) => {
+    setWeeklyScheduleValue((current) =>
+      current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  const removeWeeklyScheduleItem = (index) => {
+    setWeeklyScheduleValue((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  const addScheduleExceptionItem = () => {
+    setScheduleExceptionsValue((current) => [...current, { ...emptyScheduleExceptionItem }]);
+  };
+
+  const updateScheduleExceptionItem = (index, field, value) => {
+    setScheduleExceptionsValue((current) =>
+      current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  const removeScheduleExceptionItem = (index) => {
+    setScheduleExceptionsValue((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
 
   return (
     <form id="admin-course-form" onSubmit={handleSubmit}>
@@ -238,6 +354,103 @@ export default function CourseForm({ course, onSubmit, apiBaseUrl }) {
           <label htmlFor="admin-course-end">End date</label>
           <input id="admin-course-end" type="date" value={endDateValue} onChange={(event) => setEndDateValue(event.target.value)} />
         </div>
+
+        {typeValue === "group" ? (
+          <div className="span-two-columns admin-course-schedule-section">
+            <div className="admin-content-form-section-title">Weekly Class Schedule</div>
+            <p className="admin-course-schedule-help">Each row repeats every week until the course end date. To apply a permanent change, add a new row for the same weekday with a later Effective from date.</p>
+
+            <div className="admin-course-schedule-list">
+              {weeklyScheduleValue.map((item, index) => (
+                <div key={`weekly-schedule-${index}`} className="admin-course-schedule-row">
+                  <div>
+                    <label htmlFor={`admin-course-schedule-day-${index}`}>Day</label>
+                    <select id={`admin-course-schedule-day-${index}`} aria-label={`Weekly schedule day ${index + 1}`} value={item.dayOfWeek} onChange={(event) => updateWeeklyScheduleItem(index, "dayOfWeek", event.target.value)}>
+                      {dayOptions.map((dayOption) => (
+                        <option key={dayOption.value} value={dayOption.value}>
+                          {dayOption.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor={`admin-course-schedule-start-${index}`}>Start</label>
+                    <input id={`admin-course-schedule-start-${index}`} aria-label={`Weekly schedule start time ${index + 1}`} type="time" value={item.startTime} onChange={(event) => updateWeeklyScheduleItem(index, "startTime", event.target.value)} />
+                  </div>
+
+                  <div>
+                    <label htmlFor={`admin-course-schedule-end-${index}`}>End</label>
+                    <input id={`admin-course-schedule-end-${index}`} aria-label={`Weekly schedule end time ${index + 1}`} type="time" value={item.endTime} onChange={(event) => updateWeeklyScheduleItem(index, "endTime", event.target.value)} />
+                  </div>
+
+                  <div>
+                    <label htmlFor={`admin-course-schedule-effective-from-${index}`}>Effective from</label>
+                    <input id={`admin-course-schedule-effective-from-${index}`} aria-label={`Weekly schedule effective from ${index + 1}`} type="date" value={item.effectiveFrom} onChange={(event) => updateWeeklyScheduleItem(index, "effectiveFrom", event.target.value)} />
+                  </div>
+
+                  <div>
+                    <label htmlFor={`admin-course-schedule-effective-to-${index}`}>Effective to</label>
+                    <input id={`admin-course-schedule-effective-to-${index}`} aria-label={`Weekly schedule effective to ${index + 1}`} type="date" value={item.effectiveTo} onChange={(event) => updateWeeklyScheduleItem(index, "effectiveTo", event.target.value)} />
+                  </div>
+
+                  <button type="button" className="admin-course-schedule-remove" onClick={() => removeWeeklyScheduleItem(index)}>
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button type="button" className="admin-course-schedule-add" onClick={addWeeklyScheduleItem}>
+              Add Weekly Slot
+            </button>
+
+            <div className="admin-content-form-section-title">One-Time Changes</div>
+            <p className="admin-course-schedule-help">Use this for exceptions on a specific date, like changing time once or cancelling that session.</p>
+
+            <div className="admin-course-schedule-list">
+              {scheduleExceptionsValue.map((item, index) => (
+                <div key={`schedule-exception-${index}`} className="admin-course-schedule-row">
+                  <div>
+                    <label htmlFor={`admin-course-exception-date-${index}`}>Date</label>
+                    <input id={`admin-course-exception-date-${index}`} aria-label={`One-time exception date ${index + 1}`} type="date" value={item.exceptionDate} onChange={(event) => updateScheduleExceptionItem(index, "exceptionDate", event.target.value)} />
+                  </div>
+
+                  <div>
+                    <label htmlFor={`admin-course-exception-cancelled-${index}`}>Status</label>
+                    <select id={`admin-course-exception-cancelled-${index}`} aria-label={`One-time exception status ${index + 1}`} value={item.isCancelled ? "cancelled" : "rescheduled"} onChange={(event) => updateScheduleExceptionItem(index, "isCancelled", event.target.value === "cancelled")}>
+                      <option value="rescheduled">Time change</option>
+                      <option value="cancelled">Cancelled class</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor={`admin-course-exception-start-${index}`}>Start</label>
+                    <input id={`admin-course-exception-start-${index}`} aria-label={`One-time exception start time ${index + 1}`} type="time" value={item.startTime} disabled={item.isCancelled} onChange={(event) => updateScheduleExceptionItem(index, "startTime", event.target.value)} />
+                  </div>
+
+                  <div>
+                    <label htmlFor={`admin-course-exception-end-${index}`}>End</label>
+                    <input id={`admin-course-exception-end-${index}`} aria-label={`One-time exception end time ${index + 1}`} type="time" value={item.endTime} disabled={item.isCancelled} onChange={(event) => updateScheduleExceptionItem(index, "endTime", event.target.value)} />
+                  </div>
+
+                  <div className="span-two-columns">
+                    <label htmlFor={`admin-course-exception-reason-${index}`}>Reason</label>
+                    <input id={`admin-course-exception-reason-${index}`} aria-label={`One-time exception reason ${index + 1}`} type="text" value={item.reason} onChange={(event) => updateScheduleExceptionItem(index, "reason", event.target.value)} placeholder="Optional note" />
+                  </div>
+
+                  <button type="button" className="admin-course-schedule-remove" onClick={() => removeScheduleExceptionItem(index)}>
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button type="button" className="admin-course-schedule-add" onClick={addScheduleExceptionItem}>
+              Add One-Time Change
+            </button>
+          </div>
+        ) : null}
       </div>
     </form>
   );
