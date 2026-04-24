@@ -1,102 +1,50 @@
 import "./Courses.css";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Select from "react-select";
 import CourseCatalogCard from "../../../../components/Course/CourseCatalogCard/CourseCatalogCard";
 
-const courses = [
-  {
-    id: 1,
-    type: "group",
-    title: "Beginner",
-    level: "A1-A2",
-    description: "Start your Portuguese journey with practical classes focused on everyday communication.",
-    weeks: "12 weeks",
-    startDate: "April 8, 2026",
-    location: "Gaia",
-  },
-  {
-    id: 2,
-    type: "group",
-    title: "Intermediate",
-    level: "B1-B2",
-    description: "Build on your current knowledge and gain confidence in conversations and writing.",
-    weeks: "12 weeks",
-    startDate: "April 8, 2026",
-    location: "Gaia",
-  },
-  {
-    id: 3,
-    type: "group",
-    title: "Advanced",
-    level: "C1-C2",
-    description: "Master the language with complex grammar, fluency training, and cultural context.",
-    weeks: "14 weeks",
-    startDate: "April 15, 2026",
-    location: "Online",
-  },
-  {
-    id: 4,
-    type: "group",
-    title: "Business Portuguese",
-    level: "A2-B2",
-    description: "Learn professional vocabulary and communication for meetings, emails, and workplace situations.",
-    weeks: "10 weeks",
-    startDate: "May 6, 2026",
-    location: "Online",
-  },
-  {
-    id: 5,
-    type: "individual",
-    title: "Beginner",
-    level: "A1",
-    description: "Personalized one-to-one guidance to start speaking Portuguese from your first classes.",
-    weeks: "8 weeks",
-    startDate: "Flexible Start",
-    location: "Online",
-  },
-  {
-    id: 6,
-    type: "individual",
-    title: "Beginner",
-    level: "A2",
-    description: "Continue the beginner journey with custom pacing and focused speaking practice.",
-    weeks: "8 weeks",
-    startDate: "Flexible Start",
-    location: "Online",
-  },
-  {
-    id: 7,
-    type: "individual",
-    title: "Intermediate",
-    level: "B1",
-    description: "Improve fluency and vocabulary through classes adapted to your personal goals.",
-    weeks: "10 weeks",
-    startDate: "Flexible Start",
-    location: "Online",
-  },
-  {
-    id: 8,
-    type: "individual",
-    title: "Intermediate",
-    level: "B2",
-    description: "Advance your language skills with structured coaching and targeted correction.",
-    weeks: "10 weeks",
-    startDate: "Flexible Start",
-    location: "Online",
-  },
-  {
-    id: 9,
-    type: "individual",
-    title: "Advanced",
-    level: "C1-C2",
-    description: "Reach near-native confidence through advanced conversation, reading, and writing work.",
-    weeks: "12 weeks",
-    startDate: "Flexible Start",
-    location: "Online",
-  },
-];
-
 export default function Courses() {
+  const [courses, setCourses] = useState([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(false);
+  const [coursesLoadError, setCoursesLoadError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCourses = async () => {
+      setIsLoadingCourses(true);
+      setCoursesLoadError("");
+
+      try {
+        const response = await fetch("/api/courses");
+        if (!response.ok) {
+          throw new Error("Unable to load courses");
+        }
+
+        const data = await response.json();
+        if (!isMounted) {
+          return;
+        }
+
+        setCourses(Array.isArray(data) ? data : []);
+      } catch {
+        if (isMounted) {
+          setCoursesLoadError("Could not load courses from the API.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingCourses(false);
+        }
+      }
+    };
+
+    loadCourses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const typeOptions = useMemo(() => {
     const options = Array.from(new Set(courses.map((course) => course.type)));
     return [
@@ -106,12 +54,12 @@ export default function Courses() {
         label: type === "group" ? "Group Courses" : "Individual Courses",
       })),
     ];
-  }, []);
+  }, [courses]);
 
   const locationOptions = useMemo(() => {
     const options = Array.from(new Set(courses.map((course) => course.location)));
     return [{ value: "all", label: "All Locations" }, ...options.map((location) => ({ value: location, label: location }))];
-  }, []);
+  }, [courses]);
 
   const [selectedType, setSelectedType] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
@@ -121,6 +69,27 @@ export default function Courses() {
     const matchesLocation = selectedLocation === "all" || course.location === selectedLocation;
     return matchesType && matchesLocation;
   });
+
+  const formatStartDate = (value) => {
+    if (!value) {
+      return "Flexible Start";
+    }
+
+    return new Date(value).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const toSlug = (value) =>
+    String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
 
   return (
     <div className="courses-page">
@@ -143,15 +112,24 @@ export default function Courses() {
       </section>
 
       <section className="courses-catalog-section">
+        {isLoadingCourses ? <p>Loading courses...</p> : null}
+        {coursesLoadError ? <p>{coursesLoadError}</p> : null}
         <div className="courses-catalog-grid">
           {filteredCourses.map((course) => (
-            <CourseCatalogCard key={course.id} level={course.level} title={course.title} description={course.description} weeks={course.weeks} startDate={course.startDate} location={course.location} type={course.type} />
+            <CourseCatalogCard
+              key={course.id}
+              slug={toSlug(course.title)}
+              level={course.level || "All Levels"}
+              title={course.title || "Untitled Course"}
+              description={course.description || "Course details coming soon."}
+              weeks={course.total_hours ? `${course.total_hours} hours` : null}
+              startDate={formatStartDate(course.start_date)}
+              location={course.location || "Location to be announced"}
+              type={course.type || "group"}
+            />
           ))}
+          {!isLoadingCourses && !coursesLoadError && filteredCourses.length === 0 ? <p>No courses found for the selected filters.</p> : null}
         </div>
-      </section>
-
-      <section className="courses-empty-state" aria-live="polite">
-        {filteredCourses.length === 0 ? <p>No courses found for the selected filters.</p> : null}
       </section>
     </div>
   );

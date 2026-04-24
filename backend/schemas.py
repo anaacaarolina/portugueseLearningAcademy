@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
 from datetime import datetime, date, time
 from decimal import Decimal
@@ -18,6 +18,7 @@ class UserBase(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     role: Optional[UserRole] = None
+    is_active: Optional[bool] = True
     street: Optional[str] = None
     city: Optional[str] = None
     postal_code: Optional[str] = None
@@ -25,6 +26,9 @@ class UserBase(BaseModel):
     notes: Optional[str] = None
 
 class UserCreate(UserBase):
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str = Field(alias="full_name")
     email: EmailStr
     password: str
 
@@ -156,17 +160,41 @@ class CourseBase(BaseModel):
     teacher_id: Optional[int] = None
     status: Optional[CourseStatus] = CourseStatus.draft
 
+
+class CourseWeeklyScheduleItem(BaseModel):
+    id: Optional[int] = None
+    day_of_week: DayOfWeek
+    start_time: time
+    end_time: time
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
+
+
+class CourseScheduleExceptionItem(BaseModel):
+    id: Optional[int] = None
+    course_schedule_id: Optional[int] = None
+    exception_date: date
+    start_time: Optional[time] = None
+    end_time: Optional[time] = None
+    is_cancelled: bool = False
+    reason: Optional[str] = None
+
 class CourseCreate(CourseBase):
     title: str
     level: CourseLevel
     type: CourseType
     regime: CourseRegime
+    weekly_schedule: list[CourseWeeklyScheduleItem] = Field(default_factory=list)
+    schedule_exceptions: list[CourseScheduleExceptionItem] = Field(default_factory=list)
 
 class CourseUpdate(CourseBase):
-    pass
+    weekly_schedule: Optional[list[CourseWeeklyScheduleItem]] = None
+    schedule_exceptions: Optional[list[CourseScheduleExceptionItem]] = None
 
 class CourseResponse(CourseBase):
     id: int
+    weekly_schedule: list[CourseWeeklyScheduleItem] = Field(default_factory=list)
+    schedule_exceptions: list[CourseScheduleExceptionItem] = Field(default_factory=list)
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

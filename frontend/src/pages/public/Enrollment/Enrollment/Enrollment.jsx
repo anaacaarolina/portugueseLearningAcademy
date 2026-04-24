@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Select from "react-select";
 import HourPackageCard from "../../../../components/Enrollment/HourPackageCard/HourPackageCard";
 import "./Enrollment.css";
@@ -31,20 +31,23 @@ function formatHours(value) {
   return amount.toFixed(1);
 }
 
-function getClassTypeLabel(type) {
-  return type === "individual" ? "Individual Class" : "Group Class";
-}
-
 export default function Enrollment() {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  const location = useLocation();
   const navigate = useNavigate();
+  const preselectedCourseId = location.state?.preselectedCourseId ?? null;
   const [courses, setCourses] = useState([]);
   const [hourPackages, setHourPackages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-  const [selectedClassType, setSelectedClassType] = useState("group");
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [selectedPackageId, setSelectedPackageId] = useState(null);
+  const courseSelectStyles = useMemo(
+    () => ({
+      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+    }),
+    [],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -66,8 +69,7 @@ export default function Enrollment() {
         }
 
         const safeCoursesRaw = Array.isArray(coursesData) ? coursesData : Array.isArray(coursesData?.courses) ? coursesData.courses : [];
-        const activeCourses = safeCoursesRaw.filter((course) => course?.status === "active");
-        const safeCourses = (activeCourses.length > 0 ? activeCourses : safeCoursesRaw).sort((a, b) => {
+        const safeCourses = [...safeCoursesRaw].sort((a, b) => {
           const aType = a?.type ?? "";
           const bType = b?.type ?? "";
           const aTitle = a?.title ?? "";
@@ -84,15 +86,13 @@ export default function Enrollment() {
           return aHours - bHours;
         });
 
-        const availableTypes = Array.from(new Set(safeCourses.map((course) => course?.type).filter((type) => Boolean(type))));
-        const defaultType = availableTypes.includes("group") ? "group" : availableTypes[0] || "group";
-        const firstCourseForType = safeCourses.find((course) => course?.type === defaultType) || safeCourses[0] || null;
+        const preferredCourse = safeCourses.find((course) => Number(course?.id) === Number(preselectedCourseId)) || null;
+        const firstCourse = preferredCourse || safeCourses[0] || null;
         const firstPackage = safeHourPackages[0] || null;
 
         setCourses(safeCourses);
         setHourPackages(safeHourPackages);
-        setSelectedClassType(defaultType);
-        setSelectedCourseId(firstCourseForType?.id ?? null);
+        setSelectedCourseId(firstCourse?.id ?? null);
         setSelectedPackageId(firstPackage?.id ?? null);
       } catch {
         if (isMounted) {
@@ -114,22 +114,10 @@ export default function Enrollment() {
     return () => {
       isMounted = false;
     };
-  }, [apiBaseUrl]);
-
-  const classTypeOptions = useMemo(() => {
-    const uniqueTypes = Array.from(new Set(courses.map((course) => course?.type).filter((type) => Boolean(type))));
-    return uniqueTypes.map((type) => ({
-      value: type,
-      label: getClassTypeLabel(type),
-    }));
-  }, [courses]);
-
-  const filteredCourses = useMemo(() => {
-    return courses.filter((course) => course?.type === selectedClassType);
-  }, [courses, selectedClassType]);
+  }, [apiBaseUrl, preselectedCourseId]);
 
   const courseOptions = useMemo(() => {
-    return filteredCourses.map((course) => {
+    return courses.map((course) => {
       const level = course?.level ? ` (${course.level})` : "";
       const title = course?.title || "Untitled course";
 
@@ -138,7 +126,7 @@ export default function Enrollment() {
         label: `${title}${level}`,
       };
     });
-  }, [filteredCourses]);
+  }, [courses]);
 
   useEffect(() => {
     if (courseOptions.length === 0) {
@@ -153,6 +141,7 @@ export default function Enrollment() {
   }, [courseOptions, selectedCourseId]);
 
   const selectedCourse = courses.find((course) => course.id === selectedCourseId) || null;
+  const selectedClassType = selectedCourse?.type || "group";
   const selectedHourPackage = hourPackages.find((hourPackage) => hourPackage.id === selectedPackageId) || null;
 
   const handleBuy = (event) => {
@@ -174,7 +163,7 @@ export default function Enrollment() {
     <div className="enrollment-page">
       <section className="enrollment-intro-section">
         <h1 className="enrollment-title">Enroll Now</h1>
-        <p className="enrollment-description">Choose your course, class type, and the perfect hour package for your learning journey.</p>
+        <p className="enrollment-description">Choose your course and the perfect hour package for your learning journey.</p>
       </section>
 
       <section className="enrollment-plan-section">
@@ -185,14 +174,21 @@ export default function Enrollment() {
             <label className="enrollment-select-label" htmlFor="enrollment-select-course">
               Learning Course
             </label>
-            <Select inputId="enrollment-select-course" className="enrollment-select" classNamePrefix="react-select" value={courseOptions.find((option) => option.value === selectedCourseId) || null} onChange={(option) => setSelectedCourseId(option?.value ?? null)} options={courseOptions} isSearchable={false} isDisabled={isLoading || courseOptions.length === 0} placeholder={isLoading ? "Loading courses..." : "No courses available"} />
-          </div>
-
-          <div className="enrollment-select-field">
-            <label className="enrollment-select-label" htmlFor="enrollment-select-class-type">
-              Class Type
-            </label>
-            <Select inputId="enrollment-select-class-type" className="enrollment-select" classNamePrefix="react-select" value={classTypeOptions.find((option) => option.value === selectedClassType) || null} onChange={(option) => setSelectedClassType(option?.value ?? "group")} options={classTypeOptions} isSearchable={false} isDisabled={isLoading || classTypeOptions.length === 0} placeholder={isLoading ? "Loading class types..." : "No class types available"} />
+            <Select
+              inputId="enrollment-select-course"
+              className="enrollment-select"
+              classNamePrefix="react-select"
+              value={courseOptions.find((option) => option.value === selectedCourseId) || null}
+              onChange={(option) => setSelectedCourseId(option?.value ?? null)}
+              options={courseOptions}
+              isSearchable={false}
+              isDisabled={isLoading || courseOptions.length === 0}
+              menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+              menuPosition="fixed"
+              styles={courseSelectStyles}
+              maxMenuHeight={520}
+              placeholder={isLoading ? "Loading courses..." : "No courses available"}
+            />
           </div>
 
           <div className="enrollment-hour-packages-grid">

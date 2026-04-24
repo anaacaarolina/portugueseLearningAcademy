@@ -346,6 +346,54 @@
   color: #fff;
 }
 
+.admin-course-schedule-section {
+  margin-top: 0.6rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(34, 63, 89, 0.12);
+}
+
+.admin-course-schedule-help {
+  margin: 0.2rem 0 0.55rem !important;
+  font-size: 0.8rem !important;
+  color: var(--text-color);
+}
+
+.admin-course-schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.admin-course-schedule-row {
+  border: 1px solid rgba(34, 63, 89, 0.12);
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.55rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.admin-course-schedule-add,
+.admin-course-schedule-remove {
+  border: 1px solid var(--dark-blue);
+  border-radius: 8px;
+  padding: 0.36rem 0.68rem;
+  background: #fff;
+  color: var(--dark-blue);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-course-schedule-add {
+  margin-top: 0.5rem;
+}
+
+.admin-course-schedule-remove {
+  justify-self: flex-start;
+  margin-top: 0.35rem;
+}
+
 @media (min-width: 900px) {
   .admin-manage-content-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

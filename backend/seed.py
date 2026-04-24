@@ -5,8 +5,9 @@ from decimal import Decimal
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+import sqlalchemy as sa
 from database import SessionLocal, engine, Base
-from services.auth_services import get_password_hash
+from Services.auth_services import get_password_hash
 from models import (
     User, Teacher, HourPackage, Course, CourseSchedule,
     Enrollment, PreEnrollment, Waitlist, Payment, HourTransfer,
@@ -21,7 +22,24 @@ def hash_password(plain: str) -> str:
     return get_password_hash(plain)
 
 
+def ensure_schema():
+    """Ensure database schema is correct by adding missing columns if needed."""
+    with engine.connect() as conn:
+        # Check if course column exists in teachers table
+        inspector = sa.inspect(conn)
+        columns = [col['name'] for col in inspector.get_columns('teachers')]
+        
+        if 'course' not in columns:
+            print("Adding course column to teachers table...")
+            conn.execute(sa.text("ALTER TABLE teachers ADD COLUMN course VARCHAR"))
+            conn.commit()
+            print("✓ course column added successfully")
+
+
 def run():
+    # Ensure schema is up to date before seeding
+    ensure_schema()
+    
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
@@ -112,19 +130,17 @@ def run():
         now = datetime.now(timezone.utc)
         user_data = [
             {
-                "full_name": "Admin User",
                 "name": "Admin",
                 "email": "admin@portugueseacademy.pt",
-                "hashed_password": hash_password("Admin1234!"),
+                "password": hash_password("Admin1234!"),
                 "role": UserRole.admin,
                 "is_active": True,
                 "email_verified_at": now,
             },
             {
-                "full_name": "Maria Silva",
-                "name": "Maria",
+                "name": "Maria Silva",
                 "email": "maria.silva@example.com",
-                "hashed_password": hash_password("Student1234!"),
+                "password": hash_password("Student1234!"),
                 "role": UserRole.student,
                 "is_active": True,
                 "email_verified_at": now,
@@ -133,10 +149,9 @@ def run():
                 "country": "Portugal",
             },
             {
-                "full_name": "Luís Costa",
-                "name": "Luís",
+                "name": "Luís Costa",
                 "email": "luis.costa@example.com",
-                "hashed_password": hash_password("Student1234!"),
+                "password": hash_password("Student1234!"),
                 "role": UserRole.student,
                 "is_active": True,
                 "email_verified_at": now,
@@ -145,10 +160,9 @@ def run():
                 "country": "Portugal",
             },
             {
-                "full_name": "Patrice Rousseau ",
-                "name": "Patrice",
+                "name": "Patrice Rousseau ",
                 "email": "patrice.rousseau@example.com",
-                "hashed_password": hash_password("Student1234!"),
+                "password": hash_password("Student1234!"),
                 "role": UserRole.student,
                 "is_active": True,
                 "email_verified_at": now,
@@ -156,10 +170,9 @@ def run():
                 "country": "France",
             },
             {
-                "full_name": "Liam O'Brien",
-                "name": "Liam",
+                "name": "Liam O'Brien",
                 "email": "liam.obrien@example.com",
-                "hashed_password": hash_password("Student1234!"),
+                "password": hash_password("Student1234!"),
                 "role": UserRole.student,
                 "is_active": False,
                 "email_verified_at": now,
@@ -167,10 +180,9 @@ def run():
                 "country": "United States of America",
             },
             {
-                "full_name": "Anabella Mendoza",
-                "name": "Anabella",
+                "name": "Anabella Mendoza",
                 "email": "anabella.mendoza@example.com",
-                "hashed_password": hash_password("Student1234!"),
+                "password": hash_password("Student1234!"),
                 "role": UserRole.student,
                 "is_active": False,
                 "email_verified_at": now,
@@ -187,6 +199,9 @@ def run():
                 db.flush()
                 users[u["email"]] = obj
             else:
+                for field, value in u.items():
+                    setattr(existing, field, value)
+                db.flush()
                 users[u["email"]] = existing
         db.commit()
 

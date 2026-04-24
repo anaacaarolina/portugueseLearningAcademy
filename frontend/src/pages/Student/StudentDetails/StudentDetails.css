@@ -1,3 +1,457 @@
-.student-details {
-  padding: 2rem;
+.student-details-page {
+  padding: var(--section-padding);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font-family: "Nunito Sans", sans-serif;
+  background-color: var(--off-white);
+}
+
+.student-details-back-link-section {
+  padding-top: 0.2rem;
+}
+
+.student-details-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--yellow);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.student-details-back-link:hover {
+  color: var(--dark-blue);
+}
+
+.student-details-card,
+.student-details-notes-section {
+  background-color: white;
+  border-radius: var(--corner-radius);
+  padding: 1rem;
+  filter: var(--drop-shadow);
+}
+
+.student-details-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  flex-direction: column;
+}
+
+.student-details-edit-profile-button {
+  border: 2px solid var(--dark-blue);
+  background-color: white;
+  color: var(--dark-blue);
+  border-radius: var(--corner-radius);
+  padding: 0.45rem 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.student-details-edit-profile-button:hover {
+  background-color: var(--light-blue);
+}
+
+.student-details-name-group {
+  gap: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.student-details-name-group h1 {
+  margin: 0;
+  color: var(--dark-blue);
+  font-size: 1.55rem;
+  line-height: 1.15;
+  font-size: 1.8rem;
+  font-family: "Roboto Slab", serif;
+}
+
+.student-details-avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--light-blue);
+  color: var(--dark-blue);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.student-details-status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.28rem 0.68rem;
+  font-size: 0.78rem;
+  font-weight: bold;
+}
+
+.student-details-status-pill.status-active {
+  background-color: var(--status-active-bg);
+  color: var(--status-active-color);
+}
+
+.student-details-status-pill.status-inactive {
+  background-color: var(--status-canceled-bg);
+  color: var(--status-canceled-color);
+}
+
+.student-details-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.student-details-info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem;
+  border-radius: 8px;
+  background-color: var(--off-white);
+}
+
+.student-details-edit-item {
+  padding: 0.55rem 0.7rem;
+}
+
+.student-details-edit-item input {
+  border: 1px solid var(--light-blue);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  width: 100%;
+  font-size: 0.9rem;
+  color: var(--text-color);
+}
+
+.student-details-edit-item input:focus {
+  outline: 1px solid var(--yellow);
+  outline-offset: 1px;
+  border-color: var(--yellow);
+}
+
+.student-details-info-value {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.student-details-info-item svg {
+  color: var(--dark-blue);
+  margin-top: 0.1rem;
+  width: 25px;
+  height: 25px;
+  margin-right: 0.6rem;
+}
+
+.student-details-info-item p {
+  margin: 0;
+  color: var(--dark-blue);
+  font-size: 0.74rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.student-details-info-item span {
+  color: var(--text-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.student-details-package-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(13, 49, 107, 0.12);
+}
+
+.student-details-package-section h2 {
+  margin: 0 0 0.75rem;
+  color: var(--dark-blue);
+  font-family: "Roboto Slab", serif;
+  font-size: 1.15rem;
+}
+
+.student-details-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.student-details-section-header h2 {
+  margin: 0;
+}
+
+.student-details-package-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background-color: var(--off-white);
+}
+
+.student-details-package-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.student-details-package-main strong {
+  color: var(--dark-blue);
+  font-size: 1rem;
+}
+
+.student-details-package-main span,
+.student-details-package-meta span {
+  color: var(--text-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.student-details-package-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.student-details-package-empty {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+
+.student-details-hours-summary {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(13, 49, 107, 0.12);
+}
+
+.student-details-hours-summary h2 {
+  margin: 0 0 0.75rem;
+  color: var(--dark-blue);
+  font-family: "Roboto Slab", serif;
+  font-size: 1.15rem;
+}
+
+.student-details-hours-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.student-details-hours-grid div {
+  background-color: var(--off-white);
+  border-radius: 8px;
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+}
+
+.student-details-hours-grid strong {
+  color: var(--dark-blue);
+  font-size: 1rem;
+}
+
+.student-details-hours-grid span {
+  color: var(--text-color);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.student-details-management-grid {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.student-details-management-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--dark-blue);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.student-details-management-grid input,
+.student-details-management-grid select,
+.student-attendance-controls select {
+  border: 1px solid var(--light-blue);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.9rem;
+  color: var(--text-color);
+  background-color: white;
+}
+
+.student-details-management-grid input:disabled,
+.student-details-management-grid select:disabled {
+  background-color: #f4f6f9;
+  color: #8a95a3;
+  cursor: not-allowed;
+}
+
+.student-attendance-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.student-attendance-controls button {
+  border: none;
+  border-radius: var(--corner-radius);
+  padding: 0.45rem 0.7rem;
+  background-color: var(--light-blue);
+  color: var(--dark-blue);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.student-management-actions {
+  background-color: white;
+  border-radius: var(--corner-radius);
+  padding: 1rem;
+  filter: var(--drop-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.student-management-notice {
+  margin: 0;
+  color: var(--dark-blue);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.student-details-save-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.student-details-notes-section h2 {
+  margin: 0;
+  color: var(--dark-blue);
+  font-family: "Roboto Slab", serif;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.student-details-notes-section p {
+  margin: 0.4rem 0 0.8rem;
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.student-details-notes-textarea {
+  width: 100%;
+  border: 1px solid var(--light-blue);
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  font-family: "Nunito Sans", sans-serif;
+  color: var(--text-color);
+  resize: vertical;
+  min-height: 9rem;
+}
+
+.student-details-notes-textarea:focus {
+  outline: 1px solid var(--yellow);
+  outline-offset: 1px;
+  border-color: var(--yellow);
+}
+
+.student-details-notes-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.student-details-save-button {
+  border: none;
+  border-radius: var(--corner-radius);
+  padding: 0.5rem 1rem;
+  background-color: var(--yellow);
+  color: var(--dark-blue);
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 2px solid transparent;
+}
+
+.student-details-clear-button {
+  border: none;
+  border-radius: var(--corner-radius);
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  color: var(--status-canceled-color);
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 2px solid var(--status-canceled-color);
+}
+
+.student-details-save-button:hover {
+  background-color: var(--light-blue);
+}
+.student-details-clear-button:hover {
+  background-color: var(--status-canceled-color);
+  color: white;
+}
+
+@media (max-width: 700px) {
+  .student-details-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .student-details-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-details-hours-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-details-package-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .student-details-package-meta {
+    align-items: flex-start;
+  }
+
+  .student-details-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-attendance-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .student-management-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

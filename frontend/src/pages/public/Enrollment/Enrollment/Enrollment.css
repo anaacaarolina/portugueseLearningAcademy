@@ -67,7 +67,18 @@
   border-radius: var(--corner-radius);
 }
 
+.react-select__menu-portal .react-select__menu {
+  padding: 0.5rem 0 0;
+  background-color: var(--light-blue);
+  border-radius: var(--corner-radius);
+}
+
 .enrollment-select .react-select__option {
+  background-color: var(--light-blue);
+  margin-bottom: 0.5rem;
+}
+
+.react-select__menu-portal .react-select__option {
   background-color: var(--light-blue);
   margin-bottom: 0.5rem;
 }
@@ -75,6 +86,13 @@
 .enrollment-select .react-select__option:hover,
 .enrollment-select .react-select__option--is-selected,
 .enrollment-select .react-select__option--is-focused {
+  background-color: var(--light-blue);
+  color: var(--off-white);
+}
+
+.react-select__menu-portal .react-select__option:hover,
+.react-select__menu-portal .react-select__option--is-selected,
+.react-select__menu-portal .react-select__option--is-focused {
   background-color: var(--light-blue);
   color: var(--off-white);
 }

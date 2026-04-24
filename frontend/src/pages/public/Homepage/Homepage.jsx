@@ -11,9 +11,59 @@ import Select from "react-select";
 export default function Homepage() {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
   const [courseType, setCourseType] = useState("group");
+  const [courses, setCourses] = useState([]);
+  const [isCoursesLoading, setIsCoursesLoading] = useState(true);
+  const [coursesError, setCoursesError] = useState("");
   const [testimonials, setTestimonials] = useState([]);
   const [isTestimonialsLoading, setIsTestimonialsLoading] = useState(true);
   const [testimonialsError, setTestimonialsError] = useState("");
+
+  const toSlug = (value) =>
+    String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCourses = async () => {
+      setIsCoursesLoading(true);
+      setCoursesError("");
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/courses`);
+        if (!response.ok) {
+          throw new Error("Unable to load courses");
+        }
+
+        const data = await response.json();
+        if (!isMounted) {
+          return;
+        }
+
+        setCourses(Array.isArray(data) ? data : []);
+      } catch {
+        if (isMounted) {
+          setCourses([]);
+          setCoursesError("Could not load courses from the API.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsCoursesLoading(false);
+        }
+      }
+    };
+
+    loadCourses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [apiBaseUrl]);
 
   useEffect(() => {
     let isMounted = true;
@@ -102,72 +152,6 @@ export default function Homepage() {
     { value: "individual", label: "Individual Courses" },
   ];
 
-  const courses = [
-    {
-      id: 1,
-      type: "group",
-      title: "Beginner",
-      level: "A1-A2",
-      summary: "Start your Portuguese Journey",
-    },
-    {
-      id: 2,
-      type: "group",
-      title: "Intermediate",
-      level: "B1-B2",
-      summary: "Build on your knowledge",
-    },
-    {
-      id: 3,
-      type: "group",
-      title: "Advanced",
-      level: "C1-C2",
-      summary: "Master the language.",
-    },
-    {
-      id: 4,
-      type: "group",
-      title: "Business Portuguese",
-      level: "A2-B2",
-      summary: "Learn vocabulary for real workplace use.",
-    },
-    {
-      id: 5,
-      type: "individual",
-      title: "Beginner",
-      level: "A1",
-      summary: "Start your Portuguese Journey",
-    },
-    {
-      id: 6,
-      type: "individual",
-      title: "Beginner",
-      level: "A2",
-      summary: "Continue the journey",
-    },
-    {
-      id: 7,
-      type: "individual",
-      title: "Intermediate",
-      level: "B1",
-      summary: "Build on your knowledge",
-    },
-    {
-      id: 8,
-      type: "individual",
-      title: "Intermediate",
-      level: "B2",
-      summary: "Advance your vocabulary",
-    },
-    {
-      id: 9,
-      type: "individual",
-      title: "Advanced",
-      level: "C1-C2",
-      summary: "Master the language",
-    },
-  ];
-
   const filteredCourses = courses.filter((course) => course.type === courseType);
 
   const features = [
@@ -204,7 +188,7 @@ export default function Homepage() {
           <p className="section-tag">Achieve your goals</p>
           <h1>Learn Portuguese with Confidence</h1>
           <p>Learn Portuguese with Confidence</p>
-          <Button text="Get Started" className="hero-button"></Button>
+          <Button text="Get Started" className="hero-button" to="/courses"></Button>
         </div>
         <div className="hero-image-wrapper">
           <img src={PortugueseFlag} alt="The portuguese flag" />
@@ -219,8 +203,11 @@ export default function Homepage() {
         <Select className="course-type-select" classNamePrefix="react-select" value={courseOptions.find((option) => option.value === courseType)} onChange={(option) => setCourseType(option.value)} options={courseOptions} isSearchable={false} />
 
         <div className="course-cards-grid">
+          {isCoursesLoading ? <p>Loading courses...</p> : null}
+          {!isCoursesLoading && coursesError ? <p>{coursesError}</p> : null}
+          {!isCoursesLoading && !coursesError && filteredCourses.length === 0 ? <p>No courses available right now.</p> : null}
           {filteredCourses.map((course) => (
-            <HomepageCourseCard key={course.id} title={course.title} level={course.level} summary={course.summary} to={"/course"} />
+            <HomepageCourseCard key={course.id} title={course.title || "Untitled Course"} level={course.level || "All Levels"} summary={course.description || "Course details coming soon."} to={`/courses/${toSlug(course.title)}`} />
           ))}
         </div>
       </section>
