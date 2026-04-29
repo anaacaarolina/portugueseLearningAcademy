@@ -33,6 +33,643 @@
   padding-top: 0.2rem !important;
 }
 
+.admin-classes-calendar-section {
+  padding-top: 0.2rem !important;
+}
+
+.admin-classes-calendar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.85rem;
+}
+
+.admin-classes-calendar-header h2 {
+  margin: 0;
+  color: var(--dark-blue);
+  font-family: "Roboto Slab", serif;
+}
+
+.admin-classes-calendar-header p {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+}
+
+.admin-classes-view-toggle {
+  background-color: var(--off-white);
+  border-radius: 999px;
+  padding: 0.2rem;
+  display: inline-flex;
+  gap: 0.2rem;
+}
+
+.admin-classes-view-toggle button {
+  border: none;
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--dark-blue);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.admin-classes-view-toggle button.is-active {
+  background-color: var(--dark-blue);
+  color: #fff;
+}
+
+.admin-classes-calendar-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.admin-classes-calendar-panel,
+.admin-classes-selected-day-panel {
+  border: 1px solid rgba(34, 63, 89, 0.1);
+  border-radius: var(--corner-radius);
+  background-color: #fff;
+  padding: 0.85rem;
+}
+
+.admin-classes-calendar-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.7rem;
+}
+
+.admin-classes-calendar-nav-row strong {
+  color: var(--dark-blue);
+  text-align: center;
+}
+
+.admin-classes-calendar-nav {
+  border: 1px solid var(--dark-blue);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--dark-blue);
+  font-weight: 700;
+  min-width: 2rem;
+  min-height: 2rem;
+  cursor: pointer;
+}
+
+.admin-classes-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.admin-classes-calendar-weekdays span {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--dark-blue);
+  font-weight: 700;
+}
+
+.admin-classes-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.admin-classes-calendar-day {
+  position: relative;
+  border: 1px solid rgba(34, 63, 89, 0.15);
+  border-radius: 8px;
+  min-height: 2.5rem;
+  background: #fff;
+  color: var(--dark-blue);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-classes-calendar-day.has-single {
+  background: #e0ecff;
+  border-color: #5b8def;
+  color: #1e3a8a;
+}
+
+.admin-classes-calendar-day.has-multiple {
+  background: #ffe7ba;
+  border-color: #f0a13f;
+  color: #7a3f00;
+}
+
+.admin-classes-calendar-day.has-none {
+  background: #f7f8fa;
+  border-color: #d8dde5;
+  color: #6f7a89;
+}
+
+.admin-classes-calendar-day.is-empty {
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.admin-classes-calendar-day.is-selected {
+  outline: 2px solid var(--dark-blue);
+}
+
+.admin-classes-calendar-day span {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-classes-calendar-day-dot {
+  position: absolute;
+  right: 0.38rem;
+  top: 0.35rem;
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 999px;
+}
+
+.admin-classes-calendar-day small {
+  position: absolute;
+  left: 0.45rem;
+  bottom: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+.admin-classes-calendar-legend {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  font-size: 0.78rem;
+  color: var(--dark-blue);
+}
+
+.admin-classes-calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.admin-classes-calendar-legend i {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 63, 89, 0.2);
+  display: inline-block;
+}
+
+.admin-classes-calendar-legend i.has-classes {
+  background: #5b8def;
+}
+
+.admin-classes-calendar-legend i.no-classes {
+  background: #f7f8fa;
+}
+
+.admin-classes-calendar-legend i.single,
+.admin-classes-week-legend i.single {
+  background: #5b8def;
+}
+
+.admin-classes-calendar-legend i.multiple,
+.admin-classes-week-legend i.multiple {
+  background: #f0a13f;
+}
+
+.admin-classes-calendar-legend i.none {
+  background: #f7f8fa;
+}
+
+.admin-classes-week-view {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.admin-classes-week-view-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.admin-classes-week-view-header h3 {
+  margin: 0;
+  color: var(--dark-blue);
+  font-family: "Roboto Slab", serif;
+}
+
+.admin-classes-week-view-header p {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+}
+
+.admin-classes-week-legend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  font-size: 0.78rem;
+  color: var(--dark-blue);
+}
+
+.admin-classes-week-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.admin-classes-week-schedule {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.admin-classes-week-schedule-header,
+.admin-classes-week-schedule-body {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.admin-classes-week-day-header-cell {
+  min-width: 0;
+}
+
+.admin-classes-week-day-header-button {
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(34, 63, 89, 0.12);
+  border-radius: 12px;
+  padding: 0.7rem 0.65rem;
+  background: #fff;
+  color: var(--dark-blue);
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-classes-week-day-header-button.single {
+  background: #eef4ff;
+  border-color: #5b8def;
+}
+
+.admin-classes-week-day-header-button.multiple {
+  background: #fff3dc;
+  border-color: #f0a13f;
+}
+
+.admin-classes-week-day-header-button.none {
+  background: #f7f8fa;
+  border-color: #d8dde5;
+}
+
+.admin-classes-week-day-header-button span {
+  display: block;
+  font-family: "Roboto Slab", serif;
+  font-size: 0.92rem;
+}
+
+.admin-classes-week-day-header-button small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--text-color);
+  font-size: 0.77rem;
+}
+
+.admin-classes-week-day-header-button i {
+  display: inline-flex;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  font-style: normal;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.admin-classes-week-day-header-button i.single {
+  background: #dbe8ff;
+  color: #1e3a8a;
+}
+
+.admin-classes-week-day-header-button i.multiple {
+  background: #ffe1b4;
+  color: #7a3f00;
+}
+
+.admin-classes-week-day-header-button i.none {
+  background: #eef1f4;
+  color: #52606d;
+}
+
+.admin-classes-week-day-column {
+  position: relative;
+  min-height: calc(13 * 4rem + 12 * 0.5rem);
+  border-radius: 12px;
+  overflow: hidden;
+  background-image: linear-gradient(to bottom, transparent 0, transparent calc(4rem - 1px), rgba(34, 63, 89, 0.08) calc(4rem - 1px), rgba(34, 63, 89, 0.08) 4rem);
+  background-size: 100% 4.5rem;
+  background-repeat: repeat-y;
+}
+
+.admin-classes-week-day-column.single {
+  background-color: #eef4ff;
+}
+
+.admin-classes-week-day-column.multiple {
+  background-color: #fff3dc;
+}
+
+.admin-classes-week-day-column.none {
+  background-color: #f7f8fa;
+}
+
+.admin-classes-week-day-column-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: repeat(13, 4rem);
+  pointer-events: none;
+}
+
+.admin-classes-week-hour-slot {
+  border-top: 1px solid rgba(34, 63, 89, 0.08);
+}
+
+.admin-classes-week-day-column-events {
+  position: absolute;
+  inset: 0;
+  padding: 0.25rem;
+}
+
+.admin-classes-week-event {
+  position: absolute;
+  left: 0.25rem;
+  right: 0.25rem;
+  border: none;
+  border-radius: 10px;
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 8px 18px rgba(34, 63, 89, 0.12);
+}
+
+.admin-classes-week-event.single {
+  background: #5b8def;
+  color: #fff;
+}
+
+.admin-classes-week-event.multiple {
+  background: #f0a13f;
+  color: #5d2d00;
+}
+
+.admin-classes-week-event-time {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  opacity: 0.95;
+}
+
+.admin-classes-week-event strong {
+  display: block;
+  margin-top: 0.18rem;
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.admin-classes-week-event p {
+  margin: 0.18rem 0 0;
+  font-size: 0.72rem;
+  opacity: 0.92;
+}
+
+.admin-classes-week-empty {
+  position: absolute;
+  top: 0.55rem;
+  left: 0.55rem;
+  margin: 0;
+  color: var(--text-color);
+  font-size: 0.8rem;
+}
+
+.admin-classes-selected-day-panel h3 {
+  margin: 0;
+  color: var(--dark-blue);
+  font-family: "Roboto Slab", serif;
+  font-size: 1rem;
+}
+
+.admin-classes-selected-day-list {
+  list-style: none;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-classes-selected-day-list li {
+  position: relative;
+  border: 1px solid rgba(34, 63, 89, 0.08);
+  border-radius: 10px;
+  padding: 0.65rem;
+  background: var(--off-white);
+}
+
+.admin-classes-selected-day-list li.is-single {
+  background: #eef4ff;
+  border-color: #5b8def;
+}
+
+.admin-classes-selected-day-list li.is-multiple {
+  background: #fff3dc;
+  border-color: #f0a13f;
+}
+
+.admin-classes-selected-day-accent {
+  position: absolute;
+  left: 0.65rem;
+  top: 0.75rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+}
+
+.admin-classes-selected-day-list li strong {
+  display: block;
+  padding-left: 1rem;
+  color: var(--dark-blue);
+  font-size: 0.9rem;
+}
+
+.admin-classes-selected-day-list li p {
+  margin: 0.35rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.82rem;
+}
+
+.admin-classes-selected-day-list li p span {
+  color: var(--dark-blue);
+  font-weight: 700;
+}
+
+.admin-classes-empty-state {
+  margin-top: 0.8rem;
+  color: var(--text-color);
+  font-size: 0.85rem;
+}
+
+.admin-email-modal {
+  width: min(100%, 760px);
+}
+
+.admin-email-recipient-list {
+  margin-top: 0.5rem;
+  max-height: 11rem;
+  overflow-y: auto;
+  border: 1px solid rgba(34, 63, 89, 0.15);
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.35rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.admin-email-recipient-item {
+  display: block;
+  position: relative;
+  border-radius: 8px;
+  padding: 0.45rem 0.5rem 0.45rem 2.1rem;
+  cursor: pointer;
+  margin: 0;
+}
+
+.admin-email-recipient-item:hover {
+  background: #f7f9fc;
+}
+
+.admin-email-recipient-item input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+  padding: 0;
+  border: 0;
+  margin: 0;
+}
+
+.admin-email-recipient-checkmark {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  height: 1.3rem;
+  width: 1.3rem;
+  border: 2px solid var(--yellow);
+  border-radius: 5px;
+  background-color: #fff;
+  transition: var(--transition);
+}
+
+.admin-email-recipient-item:hover input ~ .admin-email-recipient-checkmark {
+  background-color: #fff;
+}
+
+.admin-email-recipient-item input:focus-visible ~ .admin-email-recipient-checkmark {
+  box-shadow: 0 0 0 3px var(--yellow);
+}
+
+.admin-email-recipient-item input:checked ~ .admin-email-recipient-checkmark {
+  background-color: var(--yellow);
+  border-color: var(--yellow);
+}
+
+.admin-email-recipient-checkmark::after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.admin-email-recipient-item input:checked ~ .admin-email-recipient-checkmark::after {
+  display: block;
+}
+
+.admin-email-recipient-item .admin-email-recipient-checkmark::after {
+  left: 0.45rem;
+  top: 0.2rem;
+  width: 0.3rem;
+  height: 0.6rem;
+  border: solid var(--dark-blue);
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+
+.admin-email-recipient-copy {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.admin-email-recipient-copy span {
+  font-size: 0.86rem;
+  color: var(--dark-blue);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.admin-email-recipient-copy small {
+  font-size: 0.78rem;
+  color: var(--text-color);
+  overflow-wrap: anywhere;
+}
+
+.admin-email-inline-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-color);
+}
+
+.admin-email-preview-panel {
+  border-top: 1px solid rgba(34, 63, 89, 0.12);
+  margin-top: 0.15rem;
+  padding-top: 0.75rem;
+}
+
+.admin-email-preview-panel h4 {
+  margin: 0;
+  color: var(--dark-blue);
+  font-size: 0.92rem;
+}
+
+.admin-email-preview-recipients {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-color);
+}
+
+.admin-email-preview-card {
+  margin-top: 0.5rem;
+  border: 1px solid rgba(34, 63, 89, 0.14);
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.65rem;
+}
+
+.admin-email-preview-card strong {
+  color: var(--dark-blue);
+  font-size: 0.9rem;
+}
+
+.admin-email-preview-card p {
+  margin: 0.45rem 0 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: 0.84rem;
+}
+
 @media (min-width: 700px) {
   .admin-kpis-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -41,7 +678,33 @@
 
 @media (min-width: 1100px) {
   .admin-kpis-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-classes-calendar-layout {
+    grid-template-columns: 1.35fr 1fr;
+    align-items: start;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-classes-calendar-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-classes-week-schedule-header,
+  .admin-classes-week-schedule-body {
+    grid-template-columns: repeat(7, minmax(10rem, 1fr));
+    overflow-x: auto;
+  }
+
+  .admin-classes-week-day-column {
+    min-width: 10rem;
+  }
+
+  .admin-classes-week-day-header-button {
+    min-width: 10rem;
   }
 }
 

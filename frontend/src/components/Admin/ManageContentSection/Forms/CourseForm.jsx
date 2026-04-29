@@ -78,6 +78,8 @@ function normalizeDateValue(value) {
 
 function normalizeCourse(course) {
   const typeValue = course?.type ?? course?.model ?? emptyCourse.type;
+  const startDate = course?.start_date ?? course?.startDate ?? "";
+  const endDate = course?.end_date ?? course?.endDate ?? "";
 
   return {
     ...emptyCourse,
@@ -86,8 +88,8 @@ function normalizeCourse(course) {
     level: course?.level ?? emptyCourse.level,
     type: String(typeValue).toLowerCase(),
     regime: course?.regime ?? emptyCourse.regime,
-    startDate: course?.start_date ?? course?.startDate ?? "",
-    endDate: course?.end_date ?? course?.endDate ?? "",
+    startDate,
+    endDate,
     totalHours: course?.total_hours ?? course?.hours ?? "",
     maxStudents: course?.max_students ?? course?.maxStudents ?? "",
     location: course?.location ?? "",
@@ -98,8 +100,8 @@ function normalizeCourse(course) {
           dayOfWeek: item?.day_of_week ?? "Mon",
           startTime: normalizeTimeValue(item?.start_time),
           endTime: normalizeTimeValue(item?.end_time),
-          effectiveFrom: normalizeDateValue(item?.effective_from),
-          effectiveTo: normalizeDateValue(item?.effective_to),
+          effectiveFrom: normalizeDateValue(item?.effective_from) || startDate,
+          effectiveTo: normalizeDateValue(item?.effective_to) || endDate,
         }))
       : [],
     scheduleExceptions: Array.isArray(course?.schedule_exceptions)
@@ -150,6 +152,16 @@ export default function CourseForm({ course, onSubmit, apiBaseUrl }) {
     setWeeklyScheduleValue(draftCourse.weeklySchedule);
     setScheduleExceptionsValue(draftCourse.scheduleExceptions);
   }, [draftCourse]);
+
+  useEffect(() => {
+    setWeeklyScheduleValue((current) =>
+      current.map((item) => ({
+        ...item,
+        effectiveFrom: item.effectiveFrom || startDateValue,
+        effectiveTo: item.effectiveTo || endDateValue,
+      })),
+    );
+  }, [endDateValue, startDateValue]);
 
   useEffect(() => {
     let isMounted = true;
@@ -232,7 +244,14 @@ export default function CourseForm({ course, onSubmit, apiBaseUrl }) {
   }
 
   const addWeeklyScheduleItem = () => {
-    setWeeklyScheduleValue((current) => [...current, { ...emptyWeeklyScheduleItem }]);
+    setWeeklyScheduleValue((current) => [
+      ...current,
+      {
+        ...emptyWeeklyScheduleItem,
+        effectiveFrom: startDateValue,
+        effectiveTo: endDateValue,
+      },
+    ]);
   };
 
   const updateWeeklyScheduleItem = (index, field, value) => {

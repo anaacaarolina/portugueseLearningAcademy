@@ -29,52 +29,83 @@ def _validate_teacher(teacher_id: int | None, db: Session) -> None:
         raise HTTPException(status_code=400, detail="Invalid teacher_id")
 
 
+def _item_value(item, field_name):
+    if isinstance(item, dict):
+        return item.get(field_name)
+
+    return getattr(item, field_name, None)
+
+
 def _validate_weekly_schedule(schedule_items, course_start_date, course_end_date) -> None:
     for item in schedule_items:
-        if item.end_time <= item.start_time:
+        start_time = _item_value(item, "start_time")
+        end_time = _item_value(item, "end_time")
+        effective_from = _item_value(item, "effective_from")
+        effective_to = _item_value(item, "effective_to")
+
+        if end_time <= start_time:
             raise HTTPException(status_code=400, detail="Schedule end_time must be after start_time")
 
-        if item.effective_from and item.effective_to and item.effective_to < item.effective_from:
+        if effective_from and effective_to and effective_to < effective_from:
             raise HTTPException(status_code=400, detail="Schedule effective_to cannot be before effective_from")
 
-        if course_start_date and item.effective_from and item.effective_from < course_start_date:
+        if course_start_date and effective_from and effective_from < course_start_date:
             raise HTTPException(status_code=400, detail="Schedule effective_from cannot be before course start_date")
 
-        if course_end_date and item.effective_to and item.effective_to > course_end_date:
+        if course_end_date and effective_to and effective_to > course_end_date:
             raise HTTPException(status_code=400, detail="Schedule effective_to cannot be after course end_date")
 
 
 def _validate_schedule_exceptions(exception_items, course_start_date, course_end_date) -> None:
     for item in exception_items:
-        if course_start_date and item.exception_date < course_start_date:
+        exception_date = _item_value(item, "exception_date")
+        start_time = _item_value(item, "start_time")
+        end_time = _item_value(item, "end_time")
+        is_cancelled = bool(_item_value(item, "is_cancelled"))
+
+        if course_start_date and exception_date < course_start_date:
             raise HTTPException(status_code=400, detail="Exception date cannot be before course start_date")
 
-        if course_end_date and item.exception_date > course_end_date:
+        if course_end_date and exception_date > course_end_date:
             raise HTTPException(status_code=400, detail="Exception date cannot be after course end_date")
 
-        if item.is_cancelled:
+        if is_cancelled:
             continue
 
-        if item.start_time is None or item.end_time is None:
+        if start_time is None or end_time is None:
             raise HTTPException(status_code=400, detail="Exception start_time and end_time are required unless cancelled")
 
-        if item.end_time <= item.start_time:
+        if end_time <= start_time:
             raise HTTPException(status_code=400, detail="Exception end_time must be after start_time")
 
 
-def _replace_course_schedules(db: Session, course_id: int, weekly_schedule, schedule_exceptions) -> None:
+def _validate_group_course_requirements(course_type, start_date, end_date, weekly_schedule) -> None:
+    if course_type != CourseType.group:
+        return
+
+    if start_date is None or end_date is None:
+        raise HTTPException(status_code=400, detail="Group courses require start_date and end_date")
+
+    if not weekly_schedule:
+        raise HTTPException(status_code=400, detail="Group courses require at least one weekly_schedule item")
+
+
+def _replace_course_schedules(db: Session, course_id: int, weekly_schedule, schedule_exceptions, course_start_date, course_end_date) -> None:
     db.query(CourseScheduleException).filter(CourseScheduleException.course_id == course_id).delete()
     db.query(CourseSchedule).filter(CourseSchedule.course_id == course_id).delete()
 
     for item in weekly_schedule:
+        effective_from = _item_value(item, "effective_from") or course_start_date
+        effective_to = _item_value(item, "effective_to") or course_end_date
+
         db.add(
             CourseSchedule(
                 course_id=course_id,
-                day_of_week=item.day_of_week,
-                start_time=item.start_time,
-                end_time=item.end_time,
-                effective_from=item.effective_from,
-                effective_to=item.effective_to,
+                day_of_week=_item_value(item, "day_of_week"),
+                start_time=_item_value(item, "start_time"),
+                end_time=_item_value(item, "end_time"),
+                effective_from=effective_from,
+                effective_to=effective_to,
             )
         )
 
@@ -84,12 +115,12 @@ def _replace_course_schedules(db: Session, course_id: int, weekly_schedule, sche
         db.add(
             CourseScheduleException(
                 course_id=course_id,
-                course_schedule_id=item.course_schedule_id,
-                exception_date=item.exception_date,
-                start_time=item.start_time,
-                end_time=item.end_time,
-                is_cancelled=item.is_cancelled,
-                reason=item.reason.strip() if item.reason else None,
+                course_schedule_id=_item_value(item, "course_schedule_id"),
+                exception_date=_item_value(item, "exception_date"),
+                start_time=_item_value(item, "start_time"),
+                end_time=_item_value(item, "end_time"),
+                is_cancelled=bool(_item_value(item, "is_cancelled")),
+                reason=_item_value(item, "reason").strip() if _item_value(item, "reason") else None,
             )
         )
 
@@ -171,6 +202,7 @@ def create_course(course_data: CourseCreate, db: Session = Depends(get_db)):
     _validate_numeric_fields(course_data.total_hours, course_data.max_students)
     _validate_date_range(course_data.start_date, course_data.end_date)
     _validate_teacher(course_data.teacher_id, db)
+    _validate_group_course_requirements(course_data.type, course_data.start_date, course_data.end_date, course_data.weekly_schedule)
     _validate_weekly_schedule(course_data.weekly_schedule, course_data.start_date, course_data.end_date)
     _validate_schedule_exceptions(course_data.schedule_exceptions, course_data.start_date, course_data.end_date)
 
@@ -192,7 +224,7 @@ def create_course(course_data: CourseCreate, db: Session = Depends(get_db)):
     db.flush()
 
     if course_data.type == CourseType.group:
-        _replace_course_schedules(db, course.id, course_data.weekly_schedule, course_data.schedule_exceptions)
+        _replace_course_schedules(db, course.id, course_data.weekly_schedule, course_data.schedule_exceptions, course.start_date, course.end_date)
 
     db.commit()
     db.refresh(course)
@@ -237,6 +269,10 @@ def update_course(course_id: int, course_data: CourseUpdate, db: Session = Depen
 
     target_type = course.type
     if target_type == CourseType.group:
+        resolved_weekly_schedule = weekly_schedule if weekly_schedule is not None else db.query(CourseSchedule).filter(CourseSchedule.course_id == course.id).all()
+
+        _validate_group_course_requirements(target_type, start_date, end_date, resolved_weekly_schedule)
+
         if weekly_schedule is not None:
             _validate_weekly_schedule(weekly_schedule, start_date, end_date)
         if schedule_exceptions is not None:
@@ -245,7 +281,7 @@ def update_course(course_id: int, course_data: CourseUpdate, db: Session = Depen
         if weekly_schedule is not None or schedule_exceptions is not None:
             resolved_weekly_schedule = weekly_schedule if weekly_schedule is not None else []
             resolved_schedule_exceptions = schedule_exceptions if schedule_exceptions is not None else []
-            _replace_course_schedules(db, course.id, resolved_weekly_schedule, resolved_schedule_exceptions)
+            _replace_course_schedules(db, course.id, resolved_weekly_schedule, resolved_schedule_exceptions, start_date, end_date)
     else:
         db.query(CourseScheduleException).filter(CourseScheduleException.course_id == course.id).delete()
         db.query(CourseSchedule).filter(CourseSchedule.course_id == course.id).delete()

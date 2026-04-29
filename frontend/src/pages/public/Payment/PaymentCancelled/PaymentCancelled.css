@@ -1,0 +1,7 @@
+@import "../PaymentSuccess/PaymentSuccess.css";
+
+.payment-result-icon-cancelled {
+  width: 56px;
+  height: 56px;
+  color: #d92d20;
+}

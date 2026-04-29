@@ -207,14 +207,13 @@ export default function ManageContentSection() {
         description: "Moderate testimonials and public website comments.",
       },
     ],
-    // TODO: ADD PROFESSOR
     [],
   );
 
   const activeGroup = activeModal ? contentGroups.find((group) => group.id === activeModal.groupId) : null;
   const activeEntries = activeGroup ? (activeGroup.id === "courses" ? courses : activeGroup.id === "fun-fact-tags" ? funFactTags : activeGroup.id === "fun-facts" ? funFacts : activeGroup.id === "hour-packages" ? hourPackages : activeGroup.id === "comments" ? comments : []) : [];
-  const selectedEntryId = activeGroup ? (selectedEntryByGroup[activeGroup.id] ?? activeEntries[0]?.id ?? "") : "";
-  const selectedEntry = activeEntries.find((entry) => entry.id === selectedEntryId);
+  const selectedEntryId = activeGroup ? String(selectedEntryByGroup[activeGroup.id] ?? activeEntries[0]?.id ?? "") : "";
+  const selectedEntry = activeEntries.find((entry) => String(entry.id) === selectedEntryId);
 
   const closeModal = () => {
     setActiveModal(null);
@@ -276,12 +275,18 @@ export default function ManageContentSection() {
       return;
     }
 
+    const isEditingCourse = activeModal?.action === "edit";
+    if (isEditingCourse && !selectedEntryId) {
+      setCourseFeedback("Select a course to edit first.");
+      return;
+    }
+
     setIsCourseSaving(true);
     setCourseFeedback("");
 
     try {
-      const url = isEditMode ? `${apiBaseUrl}/courses/${selectedEntryId}` : `${apiBaseUrl}/courses`;
-      const method = isEditMode ? "PUT" : "POST";
+      const url = isEditingCourse ? `${apiBaseUrl}/courses/${selectedEntryId}` : `${apiBaseUrl}/courses`;
+      const method = isEditingCourse ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,

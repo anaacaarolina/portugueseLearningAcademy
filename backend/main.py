@@ -15,7 +15,10 @@ from routers.comments import router as comments_router
 from routers.fun_facts import router as fun_facts_router
 from routers.fun_fact_tags import router as fun_fact_tags_router
 from routers.hour_packages import router as hour_packages_router
+from routers.stripe_routes import router as stripe_router
 from Services.auth_services import get_password_hash
+from Services.email_service import send_email
+from Services.email_templates import custom_message_email
 
 import uuid
 
@@ -40,6 +43,7 @@ app.include_router(comments_router, prefix="/comments", tags=["Comments"])
 app.include_router(fun_facts_router, prefix="/fun-facts", tags=["Fun Facts"])
 app.include_router(fun_fact_tags_router, prefix="/fun-fact-tags", tags=["Fun Fact Tags"])
 app.include_router(hour_packages_router, prefix="/hour-packages", tags=["Hour Packages"])
+app.include_router(stripe_router, prefix="/api/stripe", tags=["Stripe"])
 
 DEFAULT_STUDENT_PASSWORD = os.getenv("DEFAULT_STUDENT_PASSWORD", "PLA2026")
 
@@ -240,6 +244,94 @@ def root():
 @app.get("/api/test")
 def test():
     return {"data": "Hello from FastAPI"}
+
+
+@app.get("/api/admin/email-recipients")
+def get_admin_email_recipients(db: Session = Depends(get_db)):
+    user_rows = (
+        db.query(models.User.name, models.User.email)
+        .filter(models.User.email.isnot(None))
+        .all()
+    )
+    teacher_rows = (
+        db.query(models.Teacher.name, models.Teacher.email)
+        .filter(models.Teacher.email.isnot(None))
+        .all()
+    )
+
+    recipients_by_email: dict[str, dict] = {}
+
+    for row in user_rows:
+        email = str(row.email or "").strip().lower()
+        if not email or "@" not in email:
+            continue
+
+        if email not in recipients_by_email:
+            recipients_by_email[email] = {
+                "email": email,
+                "name": str(row.name or "").strip() or email,
+                "source": "user",
+            }
+
+    for row in teacher_rows:
+        email = str(row.email or "").strip().lower()
+        if not email or "@" not in email:
+            continue
+
+        if email not in recipients_by_email:
+            recipients_by_email[email] = {
+                "email": email,
+                "name": str(row.name or "").strip() or email,
+                "source": "teacher",
+            }
+
+    recipients = sorted(
+        recipients_by_email.values(),
+        key=lambda item: (str(item["name"]).lower(), str(item["email"]).lower()),
+    )
+
+    return recipients
+
+
+@app.post("/api/admin/send-email")
+def send_admin_email(body: dict):
+    raw_to = body.get("to", [])
+    subject = str(body.get("subject", "")).strip()
+    message = str(body.get("message", "")).strip()
+
+    if isinstance(raw_to, str):
+        recipients = [segment.strip().lower() for segment in raw_to.split(",") if segment.strip()]
+    elif isinstance(raw_to, list):
+        recipients = [str(item).strip().lower() for item in raw_to if str(item).strip()]
+    else:
+        recipients = []
+
+    deduped_recipients = []
+    seen = set()
+    for recipient in recipients:
+        if "@" not in recipient or recipient in seen:
+            continue
+        seen.add(recipient)
+        deduped_recipients.append(recipient)
+
+    if not deduped_recipients:
+        raise HTTPException(status_code=400, detail="Recipient email is required")
+
+    if not subject:
+        raise HTTPException(status_code=400, detail="Email subject is required")
+
+    if not message:
+        raise HTTPException(status_code=400, detail="Email body is required")
+
+    html = custom_message_email(subject, message)
+
+    for recipient in deduped_recipients:
+        send_email(recipient, subject, html)
+
+    return {
+        "message": "Email sent successfully",
+        "sentCount": len(deduped_recipients),
+    }
 
 @app.get("/api/debug/seed")
 def seed_students(db: Session = Depends(get_db)):
@@ -737,6 +829,80 @@ def get_available_slots(teacher_id: int, db: Session = Depends(get_db)):
         }
         for s in slots
     ]
+
+
+@app.get("/api/admin/scheduled-classes")
+def get_scheduled_classes(db: Session = Depends(get_db)):
+    scheduled_rows = (
+        db.query(
+            models.ClassBooking.id,
+            models.ClassBooking.status,
+            models.Availability.slot_date,
+            models.Availability.start_time,
+            models.Availability.end_time,
+            models.Teacher.id.label("teacher_id"),
+            models.Teacher.name.label("teacher_name"),
+            models.User.id.label("student_id"),
+            models.User.name.label("student_name"),
+            models.Course.id.label("course_id"),
+            models.Course.title.label("course_title"),
+        )
+        .join(models.Enrollment, models.Enrollment.id == models.ClassBooking.enrollment_id)
+        .join(models.User, models.User.id == models.Enrollment.user_id)
+        .join(models.Availability, models.Availability.id == models.ClassBooking.availability_id)
+        .join(models.Teacher, models.Teacher.id == models.Availability.teacher_id)
+        .outerjoin(models.Course, models.Course.id == models.Enrollment.course_id)
+        .filter(models.ClassBooking.status == models.BookingStatus.scheduled)
+        .order_by(models.Availability.slot_date.asc(), models.Availability.start_time.asc(), models.ClassBooking.id.asc())
+        .all()
+    )
+
+    return [
+        {
+            "bookingId": row.id,
+            "status": row.status.value if hasattr(row.status, "value") else str(row.status),
+            "date": row.slot_date.isoformat() if row.slot_date else None,
+            "day": row.slot_date.strftime("%a") if row.slot_date else None,
+            "start": row.start_time,
+            "end": row.end_time,
+            "teacherId": row.teacher_id,
+            "teacherName": row.teacher_name,
+            "studentId": row.student_id,
+            "studentName": row.student_name,
+            "courseId": row.course_id,
+            "courseTitle": row.course_title,
+        }
+        for row in scheduled_rows
+        if row.slot_date is not None
+    ]
+
+
+@app.get("/api/admin/dashboard-kpis")
+def get_dashboard_kpis(db: Session = Depends(get_db)):
+    active_students = (
+        db.query(models.User)
+        .filter(models.User.role == models.UserRole.student)
+        .filter((models.User.is_active.is_(True)) | (models.User.is_active.is_(None)))
+        .count()
+    )
+
+    total_courses = db.query(models.Course).count()
+
+    revenue_total = (
+        db.query(func.coalesce(func.sum(models.Payment.amount), 0))
+        .filter(
+            models.Payment.status == models.PaymentStatus.paid,
+            models.Payment.type == models.PaymentType.package,
+            models.Payment.package_id.isnot(None),
+        )
+        .scalar()
+    )
+
+    return {
+        "activeStudents": active_students,
+        "totalCourses": total_courses,
+        "totalRevenue": float(revenue_total or 0),
+    }
 
 @app.post("/api/bookings")
 def create_booking(data: dict, db: Session = Depends(get_db)):

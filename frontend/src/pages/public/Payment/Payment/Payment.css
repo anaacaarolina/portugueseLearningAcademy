@@ -268,8 +268,21 @@
   margin-top: 1rem;
 }
 
+.payment-complete-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .payment-complete-button:hover {
   background-color: var(--light-blue);
+}
+
+.payment-error-message {
+  margin-top: 0.85rem;
+  margin-bottom: 0;
+  color: #b42318;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 @media (max-width: 991px) {
