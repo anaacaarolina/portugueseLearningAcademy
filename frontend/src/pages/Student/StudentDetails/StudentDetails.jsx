@@ -86,6 +86,16 @@ export default function StudentDetails() {
     }).format(new Date(value));
   }
 
+  function formatActionList(items) {
+    if (items.length <= 1) {
+      return items[0] || "";
+    }
+    if (items.length === 2) {
+      return `${items[0]} and ${items[1]}`;
+    }
+    return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+  }
+
   const loadStudent = useCallback(async () => {
     try {
       setError("");
@@ -225,10 +235,14 @@ export default function StudentDetails() {
 
   const handleApplyChanges = async () => {
     const actions = [];
-    if (profileChanged) actions.push("profile");
+    if (profileChanged) {
+      if (profileDraft.name.trim() !== (student?.name || "")) actions.push("name");
+      if (profileDraft.email.trim() !== (student?.email || "")) actions.push("email");
+      if (profileDraft.phone.trim() !== (student?.phone || "")) actions.push("phone");
+    }
     if (notesChanged) actions.push("notes");
     if (packageChanged) actions.push("hour package");
-    if (courseChanged) actions.push("course assignment");
+    if (courseChanged) actions.push("course");
     if (addHoursRequested) actions.push("hours");
     if (scheduleRequested) actions.push("class scheduling");
 
@@ -237,7 +251,8 @@ export default function StudentDetails() {
       return;
     }
 
-    const confirmed = window.confirm(`Confirm applying changes for: ${actions.join(", ")}?`);
+    const formattedActions = formatActionList(actions);
+    const confirmed = window.confirm(`Are you sure you want to save the ${formattedActions} changes?`);
     if (!confirmed) {
       return;
     }

@@ -796,6 +796,11 @@ export default function ManageContentSection() {
       return null;
     }
 
+    const getFunFactStatus = (entry) => {
+      const published = entry?.is_published ?? entry?.isPublished ?? false;
+      return published ? "Published" : "Draft";
+    };
+
     if (isCourseEditSelection) {
       if (isCourseLoading) {
         return <p>Loading courses...</p>;
@@ -827,7 +832,10 @@ export default function ManageContentSection() {
           {activeEntries.map((entry) => (
             <button key={entry.id} type="button" className={`admin-course-picker-button ${funFactEditPickId === entry.id ? "is-selected" : ""}`} onClick={() => setFunFactEditPickId(entry.id)}>
               <span>{entry.title}</span>
-              <span>{entry.created_at ? new Date(entry.created_at).toLocaleString() : "No date"}</span>
+              <span className="admin-fun-fact-meta">
+                <span className={`admin-status-pill ${getFunFactStatus(entry) === "Published" ? "is-published" : "is-draft"}`}>{getFunFactStatus(entry)}</span>
+                <span>{entry.created_at ? new Date(entry.created_at).toLocaleString() : "No date"}</span>
+              </span>
             </button>
           ))}
         </div>

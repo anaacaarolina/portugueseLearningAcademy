@@ -110,3 +110,160 @@
 .admin-student-action-link:hover {
   color: var(--dark-blue);
 }
+
+.admin-student-schedule-button {
+  margin-left: 0.6rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  background-color: var(--yellow);
+  color: var(--dark-blue);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.admin-student-schedule-button:hover {
+  filter: brightness(0.95);
+}
+
+.admin-schedule-modal {
+  max-width: 920px;
+}
+
+.admin-schedule-error {
+  color: #b83232;
+  font-weight: 600;
+}
+
+.admin-schedule-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.admin-schedule-calendar {
+  border: 1px solid rgba(34, 63, 89, 0.12);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background-color: var(--off-white);
+}
+
+.admin-schedule-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.admin-schedule-calendar-header button {
+  border: none;
+  background-color: #fff;
+  border-radius: 999px;
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.admin-schedule-weekdays {
+  margin-top: 0.6rem;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+}
+
+.admin-schedule-weekdays span {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-color);
+  text-transform: uppercase;
+}
+
+.admin-schedule-grid {
+  margin-top: 0.4rem;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+}
+
+.admin-schedule-day {
+  border: 1px solid rgba(34, 63, 89, 0.18);
+  border-radius: 8px;
+  background-color: #fff;
+  min-height: 2.4rem;
+  color: var(--text-color);
+  font-size: 0.78rem;
+  font-weight: 700;
+  position: relative;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.admin-schedule-day.is-empty {
+  border: none;
+  background-color: transparent;
+  pointer-events: none;
+}
+
+.admin-schedule-day.has-events {
+  border-color: var(--secondary-border-color);
+}
+
+.admin-schedule-day.is-selected {
+  border-color: var(--yellow);
+  box-shadow: inset 0 0 0 1px var(--yellow);
+}
+
+.admin-schedule-day-dot {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0.28rem;
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background-color: var(--yellow);
+}
+
+.admin-schedule-times h4 {
+  margin: 0 0 0.6rem;
+  color: var(--dark-blue);
+}
+
+.admin-schedule-note {
+  font-size: 0.85rem;
+  color: var(--text-color);
+}
+
+.admin-schedule-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.5rem;
+}
+
+.admin-schedule-slot {
+  border: 1px solid rgba(34, 63, 89, 0.18);
+  border-radius: 10px;
+  background-color: #fff;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: var(--dark-blue);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.admin-schedule-slot.is-selected {
+  border-color: var(--yellow);
+  box-shadow: inset 0 0 0 1px var(--yellow);
+}
+
+@media (min-width: 1100px) {
+  .admin-schedule-layout {
+    grid-template-columns: 1.1fr 1fr;
+    align-items: start;
+  }
+}

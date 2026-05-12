@@ -72,11 +72,18 @@ export default function FunFacts() {
     }, {});
   }, [tags]);
 
+  const tagIdsWithFacts = useMemo(() => {
+    return new Set(facts.map((fact) => fact?.tag_id).filter((tagId) => typeof tagId === "number"));
+  }, [facts]);
+
   const categoryButtons = useMemo(() => {
-    const categories = tags.map((tag) => tag?.name).filter((name) => typeof name === "string" && name.trim().length > 0);
+    const categories = tags
+      .filter((tag) => tagIdsWithFacts.has(tag?.id))
+      .map((tag) => tag?.name)
+      .filter((name) => typeof name === "string" && name.trim().length > 0);
 
     return ["All", ...categories];
-  }, [tags]);
+  }, [tags, tagIdsWithFacts]);
 
   useEffect(() => {
     if (!categoryButtons.includes(selectedCategory)) {

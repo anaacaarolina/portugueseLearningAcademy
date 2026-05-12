@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from sqlalchemy import inspect, text
 from decimal import Decimal
-from datetime import date, timedelta
+from datetime import date, timedelta, time
 import os
 
 from database import SessionLocal, engine
@@ -150,22 +150,33 @@ def _parse_slot_date(value):
     raise HTTPException(status_code=400, detail="Invalid date value")
 
 
+def _parse_slot_time(value, default_value):
+    if value is None or value == "":
+        value = default_value
+
+    if isinstance(value, time):
+        return value
+
+    if isinstance(value, str):
+        try:
+            return time.fromisoformat(value)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid time format: {value}. Expected HH:MM") from exc
+
+    raise HTTPException(status_code=400, detail="Invalid time value")
+
+
 def _seed_default_teacher_availability(db: Session, teacher_id: int, horizon_days: int = 56):
     valid_existing_count = (
-        db.query(models.Availability)
+        db.query(models.TeacherAvailability)
         .filter(
-            models.Availability.teacher_id == teacher_id,
-            models.Availability.slot_date.isnot(None),
+            models.TeacherAvailability.teacher_id == teacher_id,
+            models.TeacherAvailability.date.isnot(None),
         )
         .count()
     )
     if valid_existing_count > 0:
         return
-
-    db.query(models.Availability).filter(
-        models.Availability.teacher_id == teacher_id,
-        models.Availability.slot_date.is_(None),
-    ).delete()
 
     today = date.today()
     default_slots = []
@@ -176,12 +187,12 @@ def _seed_default_teacher_availability(db: Session, teacher_id: int, horizon_day
             continue
 
         default_slots.append(
-            models.Availability(
+            models.TeacherAvailability(
                 teacher_id=teacher_id,
-                slot_date=slot_date,
-                start_time="09:00",
-                end_time="17:00",
-                is_available=True,
+                date=slot_date,
+                start_time=time(9, 0),
+                end_time=time(17, 0),
+                is_booked=False,
             )
         )
 
@@ -382,9 +393,16 @@ def get_student(student_id: int, db: Session = Depends(get_db)):
 
     result = []
 
+    def _format_time(value):
+        if value is None:
+            return None
+        if hasattr(value, "strftime"):
+            return value.strftime("%H:%M")
+        return str(value)[:5]
+
     for b in bookings:
-        availability = db.query(models.Availability).filter(
-            models.Availability.id == b.availability_id
+        availability = db.query(models.TeacherAvailability).filter(
+            models.TeacherAvailability.id == b.availability_id
         ).first()
 
         if not availability:
@@ -393,10 +411,10 @@ def get_student(student_id: int, db: Session = Depends(get_db)):
         result.append({
             "id": b.id,
             "status": b.status.value if hasattr(b.status, "value") else str(b.status),
-            "date": availability.slot_date.isoformat() if availability.slot_date else None,
-            "day": availability.slot_date.strftime("%a") if availability.slot_date else None,
-            "start": availability.start_time,
-            "end": availability.end_time,
+            "date": availability.date.isoformat() if availability.date else None,
+            "day": availability.date.strftime("%a") if availability.date else None,
+            "start": _format_time(availability.start_time),
+            "end": _format_time(availability.end_time),
             "teacherId": availability.teacher_id
         })
 
@@ -654,9 +672,46 @@ def get_students(db: Session = Depends(get_db)):
         .all()
     )
 
-    course_map = _get_student_course_map(db, [student.id for student in students])
+    student_ids = [student.id for student in students]
+    course_map = _get_student_course_map(db, student_ids)
 
-    return [_serialize_student(student, course_map.get(student.id)) for student in students]
+    active_course_map = {}
+    if student_ids:
+        enrollment_rows = (
+            db.query(
+                models.Enrollment.user_id,
+                models.Enrollment.course_id,
+                models.Course.type,
+            )
+            .join(models.Course, models.Course.id == models.Enrollment.course_id)
+            .filter(
+                models.Enrollment.user_id.in_(student_ids),
+                models.Enrollment.status == models.EnrollmentStatus.active,
+            )
+            .order_by(models.Enrollment.enrolled_at.desc().nullslast(), models.Enrollment.id.desc())
+            .all()
+        )
+
+        for row in enrollment_rows:
+            if row.user_id not in active_course_map:
+                active_course_map[row.user_id] = {
+                    "course_id": row.course_id,
+                    "course_type": row.type.value if hasattr(row.type, "value") else str(row.type),
+                }
+
+    response_payload = []
+    for student in students:
+        payload = _serialize_student(student, course_map.get(student.id))
+        active_course = active_course_map.get(student.id)
+        if active_course:
+            payload["activeCourseId"] = active_course["course_id"]
+            payload["activeCourseType"] = active_course["course_type"]
+        else:
+            payload["activeCourseId"] = None
+            payload["activeCourseType"] = None
+        response_payload.append(payload)
+
+    return response_payload
 
 @app.post("/api/students")
 def create_student(data: dict, db: Session = Depends(get_db)):
@@ -751,11 +806,36 @@ def get_teachers(db: Session = Depends(get_db)):
     ]
 
 @app.delete("/api/teachers/{teacher_id}")
-def delete_teacher(teacher_id: int, db: Session = Depends(get_db)):
+def delete_teacher(teacher_id: int, force: bool = False, db: Session = Depends(get_db)):
     teacher = db.query(models.Teacher).filter(models.Teacher.id == teacher_id).first()
 
     if not teacher:
         raise HTTPException(status_code=404, detail="Teacher not found")
+
+    has_bookings = (
+        db.query(models.ClassBooking.id)
+        .join(models.TeacherAvailability, models.TeacherAvailability.id == models.ClassBooking.availability_id)
+        .filter(models.TeacherAvailability.teacher_id == teacher_id)
+        .first()
+        is not None
+    )
+
+    if has_bookings and not force:
+        raise HTTPException(status_code=400, detail="Teacher has booked classes and cannot be deleted")
+
+    if force:
+        availability_ids = (
+            db.query(models.TeacherAvailability.id)
+            .filter(models.TeacherAvailability.teacher_id == teacher_id)
+            .subquery()
+        )
+        db.query(models.ClassBooking).filter(
+            models.ClassBooking.availability_id.in_(availability_ids)
+        ).delete(synchronize_session=False)
+
+    db.query(models.TeacherAvailability).filter(models.TeacherAvailability.teacher_id == teacher_id).delete(synchronize_session=False)
+    db.query(models.Availability).filter(models.Availability.teacher_id == teacher_id).delete(synchronize_session=False)
+    db.query(models.Course).filter(models.Course.teacher_id == teacher_id).update({"teacher_id": None}, synchronize_session=False)
 
     db.delete(teacher)
     db.commit()
@@ -764,23 +844,46 @@ def delete_teacher(teacher_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/teachers/{teacher_id}/availability")
 def set_availability(teacher_id: int, data: list = Body(...), db: Session = Depends(get_db)):
+    booked_ids = {
+        row[0]
+        for row in db.query(models.ClassBooking.availability_id)
+        .join(models.TeacherAvailability, models.TeacherAvailability.id == models.ClassBooking.availability_id)
+        .filter(models.TeacherAvailability.teacher_id == teacher_id)
+        .all()
+    }
 
-    db.query(models.Availability).filter(models.Availability.teacher_id == teacher_id).delete()
+    delete_query = db.query(models.TeacherAvailability).filter(models.TeacherAvailability.teacher_id == teacher_id)
+    if booked_ids:
+        delete_query = delete_query.filter(models.TeacherAvailability.id.notin_(booked_ids))
+    delete_query.delete(synchronize_session=False)
 
     for slot in data:
         slot_date = _parse_slot_date(slot.get("date"))
         if slot_date is None:
             raise HTTPException(status_code=400, detail="Each slot must include a valid date")
 
-        start_time = slot.get("start") or "09:00"
-        end_time = slot.get("end") or "17:00"
+        start_time = _parse_slot_time(slot.get("start"), "09:00")
+        end_time = _parse_slot_time(slot.get("end"), "17:00")
 
-        availability = models.Availability(
+        is_available = bool(slot.get("isAvailable", True))
+        existing = db.query(models.TeacherAvailability).filter(
+            models.TeacherAvailability.teacher_id == teacher_id,
+            models.TeacherAvailability.date == slot_date,
+            models.TeacherAvailability.start_time == start_time,
+            models.TeacherAvailability.end_time == end_time,
+        ).first()
+
+        if existing:
+            if not existing.is_booked:
+                existing.is_booked = not is_available
+            continue
+
+        availability = models.TeacherAvailability(
             teacher_id=teacher_id,
-            slot_date=slot_date,
+            date=slot_date,
             start_time=start_time,
             end_time=end_time,
-            is_available=bool(slot.get("isAvailable", True)),
+            is_booked=not is_available,
         )
         db.add(availability)
     db.commit()
@@ -793,39 +896,42 @@ def get_availability(teacher_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     slots = (
-        db.query(models.Availability)
+        db.query(models.TeacherAvailability)
         .filter(
-            models.Availability.teacher_id == teacher_id,
-            models.Availability.slot_date.isnot(None),
+            models.TeacherAvailability.teacher_id == teacher_id,
+            models.TeacherAvailability.date.isnot(None),
         )
-        .order_by(models.Availability.slot_date.asc(), models.Availability.start_time.asc())
+        .order_by(models.TeacherAvailability.date.asc(), models.TeacherAvailability.start_time.asc())
         .all()
     )
     return [
         {
-            "date": a.slot_date.isoformat() if a.slot_date else None,
-            "start": a.start_time,
-            "end": a.end_time,
-            "isAvailable": bool(a.is_available),
+            "date": a.date.isoformat() if a.date else None,
+            "start": a.start_time.strftime("%H:%M") if a.start_time else None,
+            "end": a.end_time.strftime("%H:%M") if a.end_time else None,
+            "isAvailable": not bool(a.is_booked),
         }
         for a in slots
     ]
 
 @app.get("/api/teachers/{teacher_id}/available-slots")
 def get_available_slots(teacher_id: int, db: Session = Depends(get_db)):
-    slots = db.query(models.Availability).filter(
-        models.Availability.teacher_id == teacher_id,
-        models.Availability.slot_date.isnot(None),
-        models.Availability.is_available == True,
+    _seed_default_teacher_availability(db, teacher_id)
+    db.commit()
+
+    slots = db.query(models.TeacherAvailability).filter(
+        models.TeacherAvailability.teacher_id == teacher_id,
+        models.TeacherAvailability.date.isnot(None),
+        models.TeacherAvailability.is_booked == False,
     ).all()
 
     return [
         {
             "id": s.id,
-            "date": s.slot_date.isoformat() if s.slot_date else None,
-            "day": s.slot_date.strftime("%a") if s.slot_date else None,
-            "start": s.start_time,
-            "end": s.end_time
+            "date": s.date.isoformat() if s.date else None,
+            "day": s.date.strftime("%a") if s.date else None,
+            "start": s.start_time.strftime("%H:%M") if s.start_time else None,
+            "end": s.end_time.strftime("%H:%M") if s.end_time else None
         }
         for s in slots
     ]
@@ -837,9 +943,9 @@ def get_scheduled_classes(db: Session = Depends(get_db)):
         db.query(
             models.ClassBooking.id,
             models.ClassBooking.status,
-            models.Availability.slot_date,
-            models.Availability.start_time,
-            models.Availability.end_time,
+            models.TeacherAvailability.date,
+            models.TeacherAvailability.start_time,
+            models.TeacherAvailability.end_time,
             models.Teacher.id.label("teacher_id"),
             models.Teacher.name.label("teacher_name"),
             models.User.id.label("student_id"),
@@ -849,11 +955,11 @@ def get_scheduled_classes(db: Session = Depends(get_db)):
         )
         .join(models.Enrollment, models.Enrollment.id == models.ClassBooking.enrollment_id)
         .join(models.User, models.User.id == models.Enrollment.user_id)
-        .join(models.Availability, models.Availability.id == models.ClassBooking.availability_id)
-        .join(models.Teacher, models.Teacher.id == models.Availability.teacher_id)
+        .join(models.TeacherAvailability, models.TeacherAvailability.id == models.ClassBooking.availability_id)
+        .join(models.Teacher, models.Teacher.id == models.TeacherAvailability.teacher_id)
         .outerjoin(models.Course, models.Course.id == models.Enrollment.course_id)
         .filter(models.ClassBooking.status == models.BookingStatus.scheduled)
-        .order_by(models.Availability.slot_date.asc(), models.Availability.start_time.asc(), models.ClassBooking.id.asc())
+        .order_by(models.TeacherAvailability.date.asc(), models.TeacherAvailability.start_time.asc(), models.ClassBooking.id.asc())
         .all()
     )
 
@@ -861,10 +967,10 @@ def get_scheduled_classes(db: Session = Depends(get_db)):
         {
             "bookingId": row.id,
             "status": row.status.value if hasattr(row.status, "value") else str(row.status),
-            "date": row.slot_date.isoformat() if row.slot_date else None,
-            "day": row.slot_date.strftime("%a") if row.slot_date else None,
-            "start": row.start_time,
-            "end": row.end_time,
+            "date": row.date.isoformat() if row.date else None,
+            "day": row.date.strftime("%a") if row.date else None,
+            "start": row.start_time.strftime("%H:%M") if row.start_time else None,
+            "end": row.end_time.strftime("%H:%M") if row.end_time else None,
             "teacherId": row.teacher_id,
             "teacherName": row.teacher_name,
             "studentId": row.student_id,
@@ -873,7 +979,7 @@ def get_scheduled_classes(db: Session = Depends(get_db)):
             "courseTitle": row.course_title,
         }
         for row in scheduled_rows
-        if row.slot_date is not None
+        if row.date is not None
     ]
 
 
@@ -910,6 +1016,28 @@ def create_booking(data: dict, db: Session = Depends(get_db)):
     teacher_id = data["teacherId"]
     slots = data["slots"]
 
+    def _time_to_minutes(value):
+        if not value:
+            return None
+        if hasattr(value, "hour") and hasattr(value, "minute"):
+            return value.hour * 60 + value.minute
+        parts = str(value).split(":")
+        if len(parts) < 2:
+            return None
+        try:
+            hours = int(parts[0])
+            minutes = int(parts[1])
+        except ValueError:
+            return None
+        return hours * 60 + minutes
+
+    def _minutes_to_time_label(total_minutes):
+        if total_minutes is None:
+            return None
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+        return time(hour=hours, minute=minutes)
+
     enrollment = (
         db.query(models.Enrollment)
         .filter(
@@ -924,15 +1052,53 @@ def create_booking(data: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Student has no active enrollment")
 
     for slot in slots:
-        availability = db.query(models.Availability).filter(
-            models.Availability.id == slot["id"],
-            models.Availability.is_available == True
+        availability = db.query(models.TeacherAvailability).filter(
+            models.TeacherAvailability.id == slot["id"],
+            models.TeacherAvailability.is_booked == False
         ).first()
 
         if not availability:
             raise HTTPException(status_code=400, detail="Slot not available")
 
-        availability.is_available = False
+        slot_start = slot.get("start")
+        slot_end = slot.get("end")
+        if slot_start and slot_end:
+            availability_start = _time_to_minutes(availability.start_time)
+            availability_end = _time_to_minutes(availability.end_time)
+            requested_start = _time_to_minutes(slot_start)
+            requested_end = _time_to_minutes(slot_end)
+
+            if None in (availability_start, availability_end, requested_start, requested_end):
+                raise HTTPException(status_code=400, detail="Invalid time values")
+
+            if requested_end <= requested_start:
+                raise HTTPException(status_code=400, detail="Invalid time window")
+
+            if requested_start < availability_start or requested_end > availability_end:
+                raise HTTPException(status_code=400, detail="Requested slot is outside availability")
+
+            if requested_start > availability_start:
+                db.add(models.TeacherAvailability(
+                    teacher_id=availability.teacher_id,
+                    date=availability.date,
+                    start_time=_minutes_to_time_label(availability_start),
+                    end_time=_minutes_to_time_label(requested_start),
+                    is_booked=False,
+                ))
+
+            if requested_end < availability_end:
+                db.add(models.TeacherAvailability(
+                    teacher_id=availability.teacher_id,
+                    date=availability.date,
+                    start_time=_minutes_to_time_label(requested_end),
+                    end_time=_minutes_to_time_label(availability_end),
+                    is_booked=False,
+                ))
+
+            availability.start_time = _minutes_to_time_label(requested_start)
+            availability.end_time = _minutes_to_time_label(requested_end)
+
+        availability.is_booked = True
 
         booking = models.ClassBooking(
             enrollment_id=enrollment.id,

@@ -391,7 +391,7 @@ export default function AdminDashboard() {
       const normalizedData = [...bookings, ...generatedCourseScheduleEntries];
       setScheduledClasses(normalizedData);
 
-      if (normalizedData.length > 0) {
+      if (!selectedCalendarDate && normalizedData.length > 0) {
         const firstScheduledDate = [...normalizedData]
           .map((item) => item.date)
           .sort((a, b) => a.localeCompare(b))[0];
@@ -411,11 +411,18 @@ export default function AdminDashboard() {
   };
 
   const handleDelete = async (teacherId) => {
-    if (!window.confirm("Are you sure you want to delete this tutor?")) return;
+    if (!window.confirm("Are you sure you want to permanently delete this tutor and all related bookings?")) return;
 
-    await fetch(`/api/teachers/${teacherId}`, {
+    const response = await fetch(`/api/teachers/${teacherId}?force=true`, {
       method: "DELETE",
     });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("SERVER ERROR:", text);
+      alert(text || "Failed to delete teacher.");
+      return;
+    }
 
     await loadTeachers();
   };

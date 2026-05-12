@@ -19,6 +19,8 @@ class UserBase(BaseModel):
     phone: Optional[str] = None
     role: Optional[UserRole] = None
     is_active: Optional[bool] = True
+    terms_accepted: Optional[bool] = None
+    terms_accepted_at: Optional[datetime] = None
     street: Optional[str] = None
     city: Optional[str] = None
     postal_code: Optional[str] = None
@@ -31,6 +33,7 @@ class UserCreate(UserBase):
     name: str = Field(alias="full_name")
     email: EmailStr
     password: str
+    terms_accepted: bool = Field(alias="termsAccepted")
 
 class UserUpdate(UserBase):
     password: Optional[str] = None
