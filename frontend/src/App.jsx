@@ -7,6 +7,8 @@ import Course from "./pages/public/Courses/Course/Course";
 import Courses from "./pages/public/Courses/Courses/Courses";
 import Enrollment from "./pages/public/Enrollment/Enrollment/Enrollment";
 import Payment from "./pages/public/Payment/Payment/Payment";
+import PaymentSuccess from "./pages/public/Payment/PaymentSuccess/PaymentSuccess";
+import PaymentCancelled from "./pages/public/Payment/PaymentCancelled/PaymentCancelled";
 import Login from "./pages/auth/Login/Login";
 import Register from "./pages/auth/Register/Register";
 import FunFact from "./pages/public/FunFacts/FunFact/FunFact";
@@ -37,6 +39,8 @@ function App() {
           <Route path="/courses/:courseSlug" element={<Course />} />
           <Route path="/enrollment" element={<Enrollment />} />
           <Route path="/payment" element={<Payment />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-cancelled" element={<PaymentCancelled />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/fun-facts" element={<FunFacts />} />

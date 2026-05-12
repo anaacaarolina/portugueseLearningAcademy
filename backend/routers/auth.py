@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import text, inspect
+from sqlalchemy.sql import func
 from database import get_db
 from models import UserRole
 from schemas import UserCreate, UserResponse, Token
@@ -82,6 +84,12 @@ def get_current_user_profile(token: str = Depends(oauth2_scheme), db: Session = 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
+    if not user_data.terms_accepted:
+        raise HTTPException(
+            status_code=400,
+            detail="You must accept the terms and privacy policy to register."
+        )
+
     columns = _users_columns(db)
     existing_user = _fetch_user_by_email(db, str(user_data.email), columns)
     
@@ -115,6 +123,14 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         insert_columns.append("is_active")
         insert_values["is_active"] = True
 
+    if "terms_accepted" in columns:
+        insert_columns.append("terms_accepted")
+        insert_values["terms_accepted"] = True
+
+    if "terms_accepted_at" in columns:
+        insert_columns.append("terms_accepted_at")
+        insert_values["terms_accepted_at"] = func.now()
+
     placeholders = [f":{column}" for column in insert_columns]
     query = text(
         f"INSERT INTO users ({', '.join(insert_columns)}) VALUES ({', '.join(placeholders)}) RETURNING id"
@@ -129,6 +145,8 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         "name": user_data.name,
         "role": UserRole.student,
         "is_active": True,
+        "terms_accepted": True,
+        "terms_accepted_at": datetime.utcnow(),
     }
 
 

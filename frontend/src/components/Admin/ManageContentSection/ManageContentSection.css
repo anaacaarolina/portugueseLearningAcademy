@@ -293,6 +293,36 @@
   font-weight: 700;
   cursor: pointer;
   transition: var(--transition);
+  text-align: start;
+}
+
+.admin-fun-fact-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: rgba(34, 63, 89, 0.7);
+}
+
+.admin-status-pill {
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+}
+
+.admin-status-pill.is-published {
+  background-color: rgba(16, 122, 79, 0.14);
+  color: #0f5d3c;
+  border-color: rgba(16, 122, 79, 0.35);
+}
+
+.admin-status-pill.is-draft {
+  background-color: rgba(86, 93, 105, 0.12);
+  color: #4d5361;
+  border-color: rgba(86, 93, 105, 0.3);
 }
 
 .admin-course-picker-button:hover {

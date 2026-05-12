@@ -187,7 +187,6 @@ export default function Homepage() {
         <div className="hero-content">
           <p className="section-tag">Achieve your goals</p>
           <h1>Learn Portuguese with Confidence</h1>
-          <p>Learn Portuguese with Confidence</p>
           <Button text="Get Started" className="hero-button" to="/courses"></Button>
         </div>
         <div className="hero-image-wrapper">

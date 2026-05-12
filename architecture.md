@@ -1,8 +1,38 @@
 # Architecture — Portuguese Learning Academy
 
+## Table of Contents
+
+- [Architecture — Portuguese Learning Academy](#architecture--portuguese-learning-academy)
+  - [Table of Contents](#table-of-contents)
+  - [1. Project Overview](#1-project-overview)
+  - [2. High-Level Architecture](#2-high-level-architecture)
+  - [3. Repository Structure](#3-repository-structure)
+  - [4. Frontend](#4-frontend)
+    - [4.1 Stack](#41-stack)
+    - [4.2 Page Map (Current Routes)](#42-page-map-current-routes)
+    - [4.3 Conventions](#43-conventions)
+  - [5. Backend](#5-backend)
+    - [5.1 Stack](#51-stack)
+    - [5.2 Router Modules](#52-router-modules)
+    - [5.3 App-Level Endpoints (main.py)](#53-app-level-endpoints-mainpy)
+    - [5.4 Service Helpers](#54-service-helpers)
+    - [5.5 Environment Variables](#55-environment-variables)
+  - [6. Database](#6-database)
+    - [6.1 Table Summary](#61-table-summary)
+    - [6.2 Key Relationships](#62-key-relationships)
+    - [6.3 Business Rules Reflected in the Schema](#63-business-rules-reflected-in-the-schema)
+  - [7. Authentication \& Authorization](#7-authentication--authorization)
+  - [8. Payment Flow](#8-payment-flow)
+  - [9. Notification Flow](#9-notification-flow)
+  - [10. Non-Functional Requirements](#10-non-functional-requirements)
+  - [11. Development Commands](#11-development-commands)
+    - [Frontend (frontend/)](#frontend-frontend)
+    - [Backend (backend/)](#backend-backend)
+  - [12. Coding Conventions \& Agent Guidance](#12-coding-conventions--agent-guidance)
+
 ## 1. Project Overview
 
-**Portuguese Learning Academy** is a web platform for a Portuguese language school offering courses at levels A1 through C2 and Business English. It supports individual and group courses, an hour-based payment model, waitlists, class scheduling, and WhatsApp/email notifications.
+**Portuguese Learning Academy** is a web platform for a Portuguese language school offering courses at levels A1 through C2 and Business English. It supports individual and group courses, an hour-based payment model, waitlists, class scheduling, and admin-managed content such as fun facts and testimonials.
 
 **Key stakeholders:** Portuguese (Learning) Academy Gaia (product owner), Sharkcoder Gaia (technical partner).
 
@@ -10,34 +40,31 @@
 
 ## 2. High-Level Architecture
 
-```
+``` bash
 ┌─────────────────────────────────────────────────────────┐
 │                        Browser                          │
 │           React 19 + Vite SPA  (frontend/)              │
 └────────────────────────┬────────────────────────────────┘
                          │ HTTPS / REST JSON
 ┌────────────────────────▼────────────────────────────────┐
-│              FastAPI Application  (backend/)             │
-│   main.py · routers/ · services/ · models/ · schemas/   │
+│              FastAPI Application  (backend/)            │
+│ main.py · routers/ · Services/ · models.py · schemas.py │
 └──────┬───────────────────────┬──────────────────────────┘
        │                       │
 ┌──────▼──────┐      ┌─────────▼──────────┐
-│  PostgreSQL  │      │  External Services  │
-│  (database) │      │  · Stripe           │
-└─────────────┘      │  · WhatsApp API     │
-                     │  · SMTP / Email     │
-                     │  · Google / FB /    │
-                     │    Apple OAuth      │
+│  PostgreSQL │      │  External Services │
+│  (database) │      │  · Stripe          │
+└─────────────┘      │  · SMTP / Email    │
                      └────────────────────┘
 ```
 
-The frontend is a pure SPA with no server-side rendering. All business logic lives in the FastAPI backend. The two apps are developed and deployed independently.
+The frontend is a pure SPA with no server-side rendering. Business logic lives in the FastAPI backend. The two apps are developed and deployed independently.
 
 ---
 
 ## 3. Repository Structure
 
-```
+``` bash
 portugueseLearningAcademy/
 ├── frontend/                   # React 19 + Vite SPA
 │   ├── src/
@@ -48,7 +75,7 @@ portugueseLearningAcademy/
 │   │   │       └── MainLayout.jsx   # Shared Header + Footer shell
 │   │   └── pages/              # Feature pages, grouped by role
 │   │       ├── public/         # Unauthenticated pages
-│   │       ├── auth/           # Login, register, OAuth callbacks
+│   │       ├── auth/           # Login, register
 │   │       ├── Admin/          # Admin dashboard and management
 │   │       └── Student/        # Student portal
 │   ├── public/
@@ -59,14 +86,15 @@ portugueseLearningAcademy/
 ├── backend/                    # FastAPI app
 │   ├── main.py                 # App factory, CORS, router registration
 │   ├── database.py             # SQLAlchemy engine + get_db() session
-│   ├── models/                 # SQLAlchemy ORM models (one file per table)
-│   ├── schemas/                # Pydantic request/response schemas
+│   ├── models.py               # SQLAlchemy ORM models
+│   ├── schemas.py              # Pydantic request/response schemas
 │   ├── routers/                # FastAPI APIRouter modules
-│   ├── services/               # Business logic (payments, notifications…)
+│   ├── Services/               # Auth + email helpers
+│   ├── alembic/                # Migrations
 │   ├── .env.example
 │   └── requirements.txt        # UTF-16 LE encoded — handle with care
 │
-└── ARCHITECTURE.md             # This file
+└── architecture.md             # This file
 ```
 
 ---
@@ -75,41 +103,43 @@ portugueseLearningAcademy/
 
 ### 4.1 Stack
 
-| Concern     | Choice                                 |
-| ----------- | -------------------------------------- |
-| Framework   | React 19                               |
-| Bundler     | Vite 7.3.1 (requires Node ≥ 20.19)     |
-| Styling     | Bootstrap (global) + per-component CSS |
-| Routing     | React Router (registered in `App.jsx`) |
-| HTTP client | fetch / axios calling FastAPI          |
+| Concern     | Choice                                         |
+| ----------- | ------------------------------------------     |
+| Framework   | React 19                                       |
+| Bundler     | Vite 7.3.1 (requires Node >= 20.19)            |
+| Styling     | Bootstrap (global) + per-component CSS         |
+| Routing     | React Router (registered in App.jsx)           |
+| Rich text   | TipTap                                         |
+| Utilities   | DOMPurify, React Select, Lucide, React Icons   |
 
-### 4.2 Page Map
+### 4.2 Page Map (Current Routes)
 
-| Path                      | Area    | Description                                      |
-| ------------------------- | ------- | ------------------------------------------------ |
-| `/`                       | public  | Homepage — course listing                        |
-| `/courses/:id`            | public  | Course detail                                    |
-| `/login`                  | auth    | Email/password + OAuth (Google, Facebook, Apple) |
-| `/register`               | auth    | Student registration                             |
-| `/verify-email`           | auth    | Email verification landing                       |
-| `/student/dashboard`      | Student | Hours balance, active enrollment, bookings       |
-| `/student/bookings`       | Student | Schedule / book individual classes               |
-| `/student/pre-enrollment` | Student | Pre-enroll for a future course                   |
-| `/admin/dashboard`        | Admin   | KPIs: total students, per-course headcount       |
-| `/admin/users`            | Admin   | User table + detail drawer with notes field      |
-| `/admin/courses`          | Admin   | Create / edit courses and schedules              |
-| `/admin/enrollments`      | Admin   | Manual enrollment, waitlist management           |
-| `/admin/payments`         | Admin   | Payment records                                  |
-| `/admin/hour-packages`    | Admin   | Manage hour packages                             |
-| `/admin/notifications`    | Admin   | Notification log                                 |
+| Path                       | Area    | Description                                  |
+| -------------------------- | ------- | -------------------------------------------- |
+| `/`                        | public  | Homepage                                     |
+| `/courses`                 | public  | Course listing                               |
+| `/courses/:courseSlug`     | public  | Course detail                                |
+| `/enrollment`              | public  | Enrollment flow entry                        |
+| `/payment`                 | public  | Payment selection                            |
+| `/payment-success`         | public  | Stripe success landing                       |
+| `/payment-cancelled`       | public  | Stripe cancel landing                        |
+| `/fun-facts`               | public  | Fun fact catalog                             |
+| `/fun-facts/:slug`         | public  | Fun fact detail                              |
+| `/login`                   | auth    | Email/password login                         |
+| `/register`                | auth    | Student registration                         |
+| `/admin-dashboard`         | Admin   | Admin dashboard                              |
+| `/student-details/:id?`    | Admin   | Student detail (optional id param)           |
+| `/student-dashboard`       | Student | Student dashboard                            |
+
+Route protection uses role-based guards in the frontend (`admin`, `student`, `unrolled_student`).
 
 ### 4.3 Conventions
 
-- One `.jsx` + one `.css` per component/page, co-located.
-- Component directories and filenames: **PascalCase**.
-- CSS classes: **kebab-case**, prefixed with component name.
-- Data-driven rendering with `map()` for lists and cards.
-- All new routes must be registered in `frontend/src/App.jsx`.
+- One .jsx + one .css per component/page, co-located.
+- Component directories and filenames: PascalCase.
+- CSS classes: kebab-case, prefixed with component name.
+- Data-driven rendering with map() for repeated UI.
+- All new routes must be registered in frontend/src/App.jsx.
 
 ---
 
@@ -117,93 +147,95 @@ portugueseLearningAcademy/
 
 ### 5.1 Stack
 
-| Concern       | Choice                                                     |
-| ------------- | ---------------------------------------------------------- |
-| Framework     | FastAPI                                                    |
-| ORM           | SQLAlchemy (async or sync session via `get_db()`)          |
-| Validation    | Pydantic v2 schemas                                        |
-| Database      | PostgreSQL                                                 |
-| Payments      | Stripe                                                     |
-| Notifications | WhatsApp Business API + SMTP email                         |
-| Auth          | JWT (email/password) + OAuth 2.0 (Google, Facebook, Apple) |
+| Concern       | Choice                                            |
+| ------------- | ------------------------------------------------- |
+| Framework     | FastAPI                                           |
+| ORM           | SQLAlchemy (sync sessions via get_db)             |
+| Validation    | Pydantic v2 schemas                               |
+| Database      | PostgreSQL                                        |
+| Payments      | Stripe Checkout + Webhooks                        |
+| Email         | SMTP via Services/email_service.py                |
+| Auth          | JWT (email/password)                              |
 
 ### 5.2 Router Modules
 
-Each router owns one domain area and is registered in `main.py`.
+Each router owns a domain area and is registered in backend/main.py.
 
-| Module            | Prefix             | Responsibility                                          |
-| ----------------- | ------------------ | ------------------------------------------------------- |
-| `auth`            | `/auth`            | Register, login, OAuth, email verification, JWT refresh |
-| `users`           | `/users`           | Student profile, billing address                        |
-| `teachers`        | `/teachers`        | Teacher profiles (admin-managed)                        |
-| `courses`         | `/courses`         | Course CRUD, schedules, status transitions              |
-| `enrollments`     | `/enrollments`     | Enroll, view, hour balance                              |
-| `pre_enrollments` | `/pre-enrollments` | Pre-enroll for future courses                           |
-| `waitlist`        | `/waitlist`        | Join, advance, offer/accept/expire                      |
-| `bookings`        | `/bookings`        | Book individual classes against teacher availability    |
-| `payments`        | `/payments`        | Stripe checkout, webhooks, receipts                     |
-| `hour_packages`   | `/hour-packages`   | Package catalog (admin)                                 |
-| `hour_transfers`  | `/hour-transfers`  | Transfer hours between students                         |
-| `notifications`   | `/notifications`   | Log; dispatch via WhatsApp / email                      |
-| `admin`           | `/admin`           | Dashboard stats, manual actions                         |
+| Module           | Prefix           | Responsibility                                |
+| ---------------- | ---------------- | --------------------------------------------- |
+| auth             | /auth            | Register, login, change password, profile     |
+| courses          | /courses         | Course CRUD + schedules + exceptions          |
+| hour_packages    | /hour-packages   | Hour package CRUD                             |
+| fun_facts        | /fun-facts       | Fun fact CRUD                                 |
+| fun_fact_tags    | /fun-fact-tags   | Fun fact tag CRUD                             |
+| comments         | /comments        | Testimonials/comments CRUD                    |
+| stripe_routes    | /api/stripe      | Stripe checkout + webhook                     |
 
-### 5.3 Service Layer
+### 5.3 App-Level Endpoints (main.py)
 
-Business logic that spans multiple tables lives in `services/`, not in routers.
+Admin and operational endpoints live directly in backend/main.py.
 
-| Service                | Key responsibilities                                               |
-| ---------------------- | ------------------------------------------------------------------ |
-| `enrollment_service`   | Check capacity, deduct hours, trigger waitlist promotion           |
-| `payment_service`      | Create Stripe session, handle webhook, update payment + enrollment |
-| `waitlist_service`     | Advance positions, send offer notifications, handle expiry         |
-| `notification_service` | Route messages to WhatsApp or email, persist to `notifications`    |
-| `booking_service`      | Validate availability, deduct `hours_used` on completion           |
-| `transfer_service`     | Move hours between enrollments, write `hour_transfers` record      |
+- Admin utilities: email recipients, send email, dashboard KPIs, scheduled classes.
+- Student management: CRUD, profile update, hour package assignment, course assignment, hours add, attendance updates, notes.
+- Teacher management: CRUD, availability management, available slots, teacher lookup by course.
+- Booking creation for scheduled classes.
 
-### 5.4 Environment Variables
+### 5.4 Service Helpers
 
-Defined in `backend/.env.example`. Key variables:
+The Services/ folder currently provides:
 
-```
+- auth_services.py: password hashing and JWT token creation.
+- email_service.py + email_templates.py: SMTP delivery and HTML templates.
+- notification_service.py + notification_type.py: notification helpers (not fully wired yet).
+
+### 5.5 Environment Variables
+
+Defined in backend/.env.example. Key variables:
+
+```bash
 DATABASE_URL=postgresql://...
 SECRET_KEY=...
 STRIPE_SECRET_KEY=...
 STRIPE_WEBHOOK_SECRET=...
-WHATSAPP_API_TOKEN=...
-SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASSWORD
-GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
-FACEBOOK_APP_ID / FACEBOOK_APP_SECRET
-APPLE_CLIENT_ID / APPLE_CLIENT_SECRET
+SMTP_HOST=...
+SMTP_PORT=...
+SMTP_USER=...
+SMTP_PASSWORD=...
 FRONTEND_URL=http://localhost:5173
+DEFAULT_STUDENT_PASSWORD=...
 ```
 
 ---
 
 ## 6. Database
 
-Below is a summary of tables and their roles.
-
 ### 6.1 Table Summary
 
-| Table                  | Purpose                                                                                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `users`                | Students and the single admin. Stores OAuth IDs, billing address, notes.                                                 |
-| `teachers`             | Teacher profiles (bio, photo). Not login accounts.                                                                       |
-| `courses`              | Course catalogue. `type` distinguishes individual vs group. `start_date`/`end_date` apply to group courses only.         |
-| `course_schedules`     | Weekly recurring slots (day + time window) for a course.                                                                 |
-| `enrollments`          | Active student–course relationship. Tracks `hours_total` and `hours_used`. Unique per `(user_id, course_id)`.            |
-| `pre_enrollments`      | Intent to join a future course. Converts to enrollment when course opens. Unique per `(user_id, course_id)`.             |
-| `waitlist`             | Queue for full courses. Ordered by `position`; status tracks offer lifecycle.                                            |
-| `hour_packages`        | Catalog of purchasable hour bundles (including trial).                                                                   |
-| `payments`             | All financial transactions. `package_id` is nullable for `extra_hour` and `trial` types. Stripe IDs stored for receipts. |
-| `hour_transfers`       | Audit log when a student transfers remaining hours to another student.                                                   |
-| `teacher_availability` | Teacher's available time slots. `is_booked` flips when a class is scheduled.                                             |
-| `class_bookings`       | Individual class sessions. Links an enrollment to an availability slot; records `hours_deducted`.                        |
-| `notifications`        | Outbound message log. Channels: `whatsapp`, `email`.                                                                     |
+| Table                       | Purpose                                                                 |
+| --------------------------- | ----------------------------------------------------------------------- |
+| users                       | Students and admin accounts, auth data, billing fields, notes           |
+| teachers                    | Teacher profiles and metadata                                           |
+| courses                     | Course catalog, type, level, regime, status                             |
+| course_schedules            | Weekly recurring schedule slots                                         |
+| course_schedule_exceptions  | One-off schedule changes or cancellations                               |
+| enrollments                 | Active student-course relationship and hour tracking                    |
+| pre_enrollments             | Intent to join a future course                                          |
+| waitlist                    | Queue for full courses                                                  |
+| hour_packages               | Purchasable hour bundles                                                |
+| payments                    | Stripe-backed payments                                                  |
+| hour_transfers              | Hour balance transfers between students                                 |
+| teacher_availability        | Teacher availability slots (date + time range)                          |
+| class_bookings              | Booked classes tied to availability                                     |
+| notifications               | Notification log                                                        |
+| fun_facts                   | Content cards for cultural facts                                        |
+| fun_fact_tags               | Tag taxonomy for fun facts                                              |
+| comments                    | Testimonials/comments with rating + status                              |
+| students (legacy)           | Legacy student snapshot table (used for seed/debug)                     |
+| availability (legacy)       | Legacy availability table                                               |
 
 ### 6.2 Key Relationships
 
-```
+```bash
 users ──< enrollments >── courses
 users ──< pre_enrollments >── courses
 users ──< waitlist >── courses
@@ -212,81 +244,68 @@ users ──< hour_transfers (from / to)
 enrollments ──< class_bookings >── teacher_availability
 teachers ──< courses
 teachers ──< teacher_availability
+fun_fact_tags ──< fun_facts
 ```
 
 ### 6.3 Business Rules Reflected in the Schema
 
-- A student may hold **only one active enrollment** per course (`UNIQUE` on `enrollments(user_id, course_id)`).
-- A student may have **only one pre-enrollment** per course (`UNIQUE` on `pre_enrollments(user_id, course_id)`).
-- Enrollment cancellation is **not permitted**; instead, remaining hours are transferred via `hour_transfers`.
-- Refund window: up to 5 days — handled by `payments.status = 'refunded'` and a new enrollment or transfer.
-- `payments.package_id` is **nullable** to support one-off `extra_hour` and `trial` payment types.
+- One enrollment per user+course (unique constraint on enrollments).
+- One pre-enrollment per user+course (unique constraint on pre_enrollments).
+- Enrollment status supports active, completed, transferred, canceled.
+- Payment type supports package, extra_hour, trial; status includes pending, paid, failed, refunded.
 
 ---
 
-## 7. Authentication & Authorisation
+## 7. Authentication & Authorization
 
-- **Email/password** with verified email (`email_verified_at` must be non-null to access protected routes).
-- **OAuth** via Google, Facebook, and Apple — IDs stored on `users` table.
-- **Roles:** `student` (default) and `admin` (single account). Role is enforced as a FastAPI dependency on every admin-prefixed router.
-- **JWT** issued on login; short-lived access token + refresh token pattern.
+- Email/password with JWT access token returned by /auth/login.
+- Role values in DB: student and admin.
+- API responses compute a derived role `unrolled_student` when a student lacks an active enrollment.
+- Frontend route guards map to these roles for admin and student access control.
 
 ---
 
 ## 8. Payment Flow
 
-```
+```bash
 Student selects package
        │
        ▼
-POST /payments → payment_service creates Stripe Checkout Session
+POST /api/stripe/create-checkout-session
        │
        ▼
 Redirect to Stripe hosted page
        │
        ▼
-Stripe calls POST /payments/webhook
+Stripe calls POST /api/stripe/webhook
        │
-       ├─ status = 'paid'  → update payment, credit hours to enrollment
-       ├─ status = 'failed' → update payment, notify student
-       └─ status = 'refunded' → update payment, reverse hours
+       └─ On paid: create payment record and update enrollment hours
 ```
 
-All prices are in **EUR**. Stripe handles multi-currency display; the platform stores amounts in euros.
+Stripe metadata includes `package_id`, optional `course_id`, and optional `user_id` to associate records.
 
 ---
 
 ## 9. Notification Flow
 
-Notifications are queued as `pending` records in the `notifications` table and dispatched by `notification_service`.
-
-| Event                             | Channel                                                            |
-| --------------------------------- | ------------------------------------------------------------------ |
-| Registration / email verification | Email                                                              |
-| Payment receipt                   | Email (Stripe receipt URL stored in `payments.stripe_receipt_url`) |
-| Enrollment confirmation           | Email                                                              |
-| Class reminder                    | WhatsApp                                                           |
-| Waitlist offer                    | WhatsApp + Email                                                   |
-| Waitlist offer expired            | Email                                                              |
+Email is currently used for admin-driven messages via /api/admin/send-email, using HTML templates from Services/email_templates.py. WhatsApp support is planned but not wired in the current code.
 
 ---
 
 ## 10. Non-Functional Requirements
 
-| Concern           | Decision                                                                      |
-| ----------------- | ----------------------------------------------------------------------------- |
-| **Mobile-first**  | All frontend components designed for small screens first                      |
-| **Hosting**       | Hostinger (previous provider); to be re-evaluated for best cost/quality ratio |
-| **Localisation**  | UI in Portuguese (PT); prices always in EUR                                   |
-| **Accessibility** | WCAG AA target; Bootstrap base provides baseline                              |
-| **CORS**          | Localhost-only in development; production origin added via env var            |
-| **Certificates**  | Feature on standby — not in current scope                                     |
+| Concern           | Decision                                                                  |
+| ----------------- | ------------------------------------------------------------------------- |
+| Mobile-first      | Frontend components are designed for small screens first                  |
+| Localization      | UI in Portuguese (PT); prices in EUR                                      |
+| Accessibility     | WCAG AA target; Bootstrap provides baseline                               |
+| CORS              | Localhost-only in development; production origin via env var              |
 
 ---
 
 ## 11. Development Commands
 
-### Frontend (`frontend/`)
+### Frontend (frontend/)
 
 ```bash
 npm install        # Install dependencies
@@ -296,23 +315,23 @@ npm run preview    # Preview production build locally
 npm run lint       # ESLint
 ```
 
-### Backend (`backend/`)
+### Backend (backend/)
 
 ```bash
 pip install -r requirements.txt   # Note: file is UTF-16 LE encoded
 uvicorn main:app --reload          # Start FastAPI dev server
 ```
 
-> No automated backend test command is defined yet. Document it here when added.
+No automated backend test command is defined yet. Document it here when added.
 
 ---
 
 ## 12. Coding Conventions & Agent Guidance
 
-- Make **targeted, minimal diffs**; avoid broad refactors unless explicitly requested.
+- Make targeted, minimal diffs; avoid broad refactors unless explicitly requested.
 - Never edit generated or dependency folders: `frontend/node_modules`, `frontend/dist`, `backend/venv`, `__pycache__`.
-- Preserve existing folder structure and naming unless reorganisation is requested.
+- Preserve existing folder structure and naming unless reorganization is requested.
 - When scope is unclear: confirm whether the change is frontend-only, backend-only, or full-stack before proceeding.
 - If a request touches routing or layout, confirm expected navigation paths.
-- If a request touches DB behaviour, confirm `DATABASE_URL` and local DB availability.
+- If a request touches DB behavior, confirm DATABASE_URL and local DB availability.
 - Link existing files in documentation rather than duplicating their content.

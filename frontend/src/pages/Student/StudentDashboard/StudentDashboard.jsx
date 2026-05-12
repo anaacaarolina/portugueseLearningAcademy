@@ -13,6 +13,13 @@ const dayToWeekdayIndex = {
   Sat: 6,
 };
 
+function buildIsoDateFromDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function getMonthGrid(year, month) {
   const firstDay = new Date(year, month, 1);
   const startingWeekday = firstDay.getDay();
@@ -47,6 +54,23 @@ function formatReadableDate(dateStr) {
   });
 }
 
+function normalizeTimeLabel(value) {
+  if (!value) {
+    return "";
+  }
+
+  return String(value).slice(0, 5);
+}
+
+function parseIsoDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function parseTimeToMinutes(value) {
   if (!value || typeof value !== "string") {
     return null;
@@ -58,6 +82,55 @@ function parseTimeToMinutes(value) {
   }
 
   return hours * 60 + minutes;
+}
+
+function formatMinutesToTimeLabel(totalMinutes) {
+  if (!Number.isFinite(totalMinutes)) {
+    return "";
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function expandAvailabilitySlots(slots) {
+  return (Array.isArray(slots) ? slots : []).flatMap((slot) => {
+    const date = String(slot?.date || "").slice(0, 10);
+    const startMinutes = parseTimeToMinutes(normalizeTimeLabel(slot?.start));
+    const endMinutes = parseTimeToMinutes(normalizeTimeLabel(slot?.end));
+
+    if (!date || startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+      return [];
+    }
+
+    const segments = [];
+    for (let current = startMinutes; current + 60 <= endMinutes; current += 60) {
+      const startLabel = formatMinutesToTimeLabel(current);
+      const endLabel = formatMinutesToTimeLabel(current + 60);
+      segments.push({
+        key: `${slot.id}-${date}-${startLabel}`,
+        availabilityId: slot.id,
+        date,
+        start: startLabel,
+        end: endLabel,
+      });
+    }
+
+    if (segments.length > 0) {
+      return segments;
+    }
+
+    return [
+      {
+        key: `${slot.id}-${date}-${normalizeTimeLabel(slot?.start)}`,
+        availabilityId: slot.id,
+        date,
+        start: normalizeTimeLabel(slot?.start),
+        end: normalizeTimeLabel(slot?.end),
+      },
+    ];
+  });
 }
 
 function formatDuration(start, end) {
@@ -90,6 +163,142 @@ function buildDateForMonth(dayOfWeek, occurrenceIndex, year, month) {
   const monthNumber = String(month + 1).padStart(2, "0");
   const dayNumber = String(day).padStart(2, "0");
   return `${year}-${monthNumber}-${dayNumber}`;
+}
+
+function buildGroupCourseScheduleEntries(course, year, month, teacherNameById) {
+  if (!course || String(course?.type || "").toLowerCase() !== "group") {
+    return [];
+  }
+
+  const courseStart = parseIsoDate(course?.start_date);
+  const courseEnd = parseIsoDate(course?.end_date);
+  if (!courseStart || !courseEnd || courseEnd < courseStart) {
+    return [];
+  }
+
+  const monthStart = new Date(year, month, 1);
+  const monthEnd = new Date(year, month + 1, 0);
+  const windowStart = monthStart > courseStart ? monthStart : courseStart;
+  const windowEnd = monthEnd < courseEnd ? monthEnd : courseEnd;
+
+  if (windowEnd < windowStart) {
+    return [];
+  }
+
+  const weeklySchedule = Array.isArray(course?.weekly_schedule) ? course.weekly_schedule : [];
+  const scheduleExceptions = Array.isArray(course?.schedule_exceptions) ? course.schedule_exceptions : [];
+  const exceptionMap = scheduleExceptions.reduce((acc, item) => {
+    const key = String(item?.exception_date || "").slice(0, 10);
+    if (!key) {
+      return acc;
+    }
+
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(item);
+    return acc;
+  }, {});
+
+  const consumedExceptionIds = new Set();
+  const entries = [];
+
+  weeklySchedule.forEach((scheduleItem, scheduleIndex) => {
+    const targetWeekday = dayToWeekdayIndex[scheduleItem?.day_of_week];
+    if (targetWeekday === undefined) {
+      return;
+    }
+
+    const effectiveFrom = parseIsoDate(scheduleItem?.effective_from) || courseStart;
+    const effectiveTo = parseIsoDate(scheduleItem?.effective_to) || courseEnd;
+    const scheduleStart = effectiveFrom > windowStart ? effectiveFrom : windowStart;
+    const scheduleEnd = effectiveTo < windowEnd ? effectiveTo : windowEnd;
+
+    if (scheduleEnd < scheduleStart) {
+      return;
+    }
+
+    const firstOccurrence = new Date(scheduleStart);
+    const delta = (targetWeekday - firstOccurrence.getDay() + 7) % 7;
+    firstOccurrence.setDate(firstOccurrence.getDate() + delta);
+
+    for (let current = new Date(firstOccurrence); current <= scheduleEnd; current.setDate(current.getDate() + 7)) {
+      const isoDate = buildIsoDateFromDate(current);
+      const exceptionsOnDate = exceptionMap[isoDate] || [];
+      const cancelled = exceptionsOnDate.some((item) => item?.is_cancelled);
+      const replacementExceptions = exceptionsOnDate.filter((item) => !item?.is_cancelled && item?.start_time && item?.end_time);
+
+      if (cancelled) {
+        continue;
+      }
+
+      if (replacementExceptions.length > 0) {
+        replacementExceptions.forEach((item, itemIndex) => {
+          if (item?.id != null) {
+            consumedExceptionIds.add(item.id);
+          }
+
+          entries.push({
+            id: `course-exception-${course.id}-${isoDate}-${scheduleIndex}-${itemIndex}`,
+            title: course?.title || "Group class",
+            level: course?.level ? String(course.level) : "",
+            format: "Group",
+            date: isoDate,
+            time: normalizeTimeLabel(item.start_time),
+            duration: formatDuration(item.start_time, item.end_time),
+            instructor: teacherNameById[course?.teacher_id] || "Teacher to be announced",
+            place: course?.location || "TBD",
+            status: "scheduled",
+          });
+        });
+        continue;
+      }
+
+      entries.push({
+        id: `course-${course.id}-${isoDate}-${scheduleIndex}`,
+        title: course?.title || "Group class",
+        level: course?.level ? String(course.level) : "",
+        format: "Group",
+        date: isoDate,
+        time: normalizeTimeLabel(scheduleItem?.start_time),
+        duration: formatDuration(scheduleItem?.start_time, scheduleItem?.end_time),
+        instructor: teacherNameById[course?.teacher_id] || "Teacher to be announced",
+        place: course?.location || "TBD",
+        status: "scheduled",
+      });
+    }
+  });
+
+  scheduleExceptions.forEach((item, index) => {
+    if (item?.is_cancelled || !item?.start_time || !item?.end_time) {
+      return;
+    }
+
+    if (item?.id != null && consumedExceptionIds.has(item.id)) {
+      return;
+    }
+
+    const exceptionDate = parseIsoDate(item?.exception_date);
+    if (!exceptionDate || exceptionDate < windowStart || exceptionDate > windowEnd) {
+      return;
+    }
+
+    const isoDate = buildIsoDateFromDate(exceptionDate);
+    entries.push({
+      id: `course-extra-exception-${course.id}-${isoDate}-${index}`,
+      title: course?.title || "Group class",
+      level: course?.level ? String(course.level) : "",
+      format: "Group",
+      date: isoDate,
+      time: normalizeTimeLabel(item.start_time),
+      duration: formatDuration(item.start_time, item.end_time),
+      instructor: teacherNameById[course?.teacher_id] || "Teacher to be announced",
+      place: course?.location || "TBD",
+      status: "scheduled",
+    });
+  });
+
+  return entries;
 }
 
 function ClassCard({ item }) {
@@ -135,11 +344,14 @@ export default function StudentDashboard() {
   const [dashboardRole, setDashboardRole] = useState(role || "student");
   const [studentName, setStudentName] = useState("Student");
   const [currentCourseLabel, setCurrentCourseLabel] = useState("No active course");
+  const [activeCourse, setActiveCourse] = useState(null);
+  const [studentId, setStudentId] = useState(null);
   const [scheduleData, setScheduleData] = useState([]);
   const [hoursSummary, setHoursSummary] = useState({ used: 0, total: 0 });
   const [attendanceLabel, setAttendanceLabel] = useState("N/A");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [viewMode, setViewMode] = useState("calendar");
   const activeMonth = useMemo(() => {
@@ -147,6 +359,17 @@ export default function StudentDashboard() {
     return new Date(today.getFullYear(), today.getMonth(), 1);
   }, []);
   const [selectedDay, setSelectedDay] = useState(1);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [availabilitySlots, setAvailabilitySlots] = useState([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState("");
+  const [selectedAvailabilityDate, setSelectedAvailabilityDate] = useState("");
+  const [selectedSlotKey, setSelectedSlotKey] = useState("");
+  const [isBooking, setIsBooking] = useState(false);
+  const [scheduleMonth, setScheduleMonth] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
 
   const year = activeMonth.getFullYear();
   const month = activeMonth.getMonth();
@@ -185,9 +408,10 @@ export default function StudentDashboard() {
           throw new Error("Invalid student profile data.");
         }
 
-        const [studentResponse, teachersResponse] = await Promise.all([
+        const [studentResponse, teachersResponse, coursesResponse] = await Promise.all([
           fetch(`${apiBaseUrl}/api/students/${studentId}`),
           fetch(`${apiBaseUrl}/api/teachers`),
+          fetch(`${apiBaseUrl}/courses`),
         ]);
 
         if (!studentResponse.ok) {
@@ -197,6 +421,8 @@ export default function StudentDashboard() {
         const studentData = await studentResponse.json();
         const teachersData = teachersResponse.ok ? await teachersResponse.json() : [];
         const teachers = Array.isArray(teachersData) ? teachersData : [];
+        const coursesData = coursesResponse.ok ? await coursesResponse.json() : [];
+        const courses = Array.isArray(coursesData) ? coursesData : [];
 
         const teacherNameById = teachers.reduce((acc, teacher) => {
           if (teacher?.id != null && teacher?.name) {
@@ -206,6 +432,10 @@ export default function StudentDashboard() {
         }, {});
 
         const bookings = Array.isArray(studentData?.bookings) ? studentData.bookings : [];
+        const activeCourseId = Number(studentData?.activeCourseId);
+        const resolvedCourse = Number.isFinite(activeCourseId)
+          ? courses.find((course) => Number(course?.id) === activeCourseId)
+          : null;
         const weekdayOccurrences = {};
         const mappedSchedule = bookings
           .map((booking, index) => {
@@ -238,6 +468,10 @@ export default function StudentDashboard() {
               status: booking?.status || "scheduled",
             };
           })
+          .filter(Boolean);
+
+        const groupScheduleEntries = buildGroupCourseScheduleEntries(resolvedCourse, year, month, teacherNameById);
+        const mergedSchedule = [...mappedSchedule, ...groupScheduleEntries]
           .filter(Boolean)
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -251,7 +485,9 @@ export default function StudentDashboard() {
         setDashboardRole(meData?.user_role || role || "student");
         setStudentName(studentData?.name || "Student");
         setCurrentCourseLabel(studentData?.course || "No active course");
-        setScheduleData(mappedSchedule);
+        setActiveCourse(resolvedCourse || null);
+        setStudentId(studentId);
+        setScheduleData(mergedSchedule);
         setHoursSummary({
           used: Number(studentData?.hoursSummary?.used) || 0,
           total: Number(studentData?.hoursSummary?.total) || 0,
@@ -274,7 +510,7 @@ export default function StudentDashboard() {
     return () => {
       isMounted = false;
     };
-  }, [apiBaseUrl, month, role, year]);
+  }, [apiBaseUrl, month, refreshKey, role, year]);
 
   useEffect(() => {
     if (scheduleData.length === 0) {
@@ -287,6 +523,10 @@ export default function StudentDashboard() {
   }, [scheduleData]);
 
   const isUnrolledStudent = dashboardRole === "unrolled_student";
+  const canScheduleClass =
+    activeCourse &&
+    String(activeCourse?.type || "").toLowerCase() === "individual" &&
+    Number.isFinite(Number(activeCourse?.teacher_id));
 
   const monthGrid = getMonthGrid(year, month);
   const monthLabel = activeMonth.toLocaleDateString("en-GB", {
@@ -312,6 +552,128 @@ export default function StudentDashboard() {
     return date.getTime() >= today.getTime();
   }) || scheduleData[0];
 
+  const availabilityByDate = useMemo(() => {
+    return availabilitySlots.reduce((acc, slot) => {
+      const slotDate = String(slot?.date || "").slice(0, 10);
+      if (!slotDate) {
+        return acc;
+      }
+
+      if (!acc[slotDate]) {
+        acc[slotDate] = [];
+      }
+
+      acc[slotDate].push(slot);
+      return acc;
+    }, {});
+  }, [availabilitySlots]);
+
+  const scheduleMonthLabel = scheduleMonth.toLocaleDateString("en-GB", {
+    month: "long",
+    year: "numeric",
+  });
+  const scheduleMonthGrid = getMonthGrid(scheduleMonth.getFullYear(), scheduleMonth.getMonth());
+  const selectedDateSlots = selectedAvailabilityDate ? availabilityByDate[selectedAvailabilityDate] || [] : [];
+  const selectedSlot = availabilitySlots.find((slot) => slot.key === selectedSlotKey);
+
+  const loadAvailabilitySlots = async () => {
+    const teacherId = activeCourse?.teacher_id;
+    if (!canScheduleClass || !teacherId) {
+      setAvailabilitySlots([]);
+      return;
+    }
+
+    setAvailabilityLoading(true);
+    setAvailabilityError("");
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/teachers/${teacherId}/available-slots`);
+      if (!response.ok) {
+        throw new Error("Could not load available slots.");
+      }
+
+      const data = await response.json();
+      const expanded = expandAvailabilitySlots(data);
+      setAvailabilitySlots(expanded);
+    } catch (error) {
+      setAvailabilitySlots([]);
+      setAvailabilityError(error instanceof Error ? error.message : "Could not load available slots.");
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
+  const openScheduleModal = () => {
+    setIsScheduleModalOpen(true);
+  };
+
+  const closeScheduleModal = () => {
+    setIsScheduleModalOpen(false);
+    setSelectedAvailabilityDate("");
+    setSelectedSlotKey("");
+    setAvailabilityError("");
+  };
+
+  const handleScheduleMonthNav = (direction) => {
+    const next = new Date(scheduleMonth);
+    next.setMonth(next.getMonth() + direction);
+    setScheduleMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+    setSelectedAvailabilityDate("");
+    setSelectedSlotKey("");
+  };
+
+  const handleBookingConfirm = async () => {
+    if (!studentId || !activeCourse?.teacher_id || !selectedSlot) {
+      return;
+    }
+
+    setIsBooking(true);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/bookings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          studentId,
+          teacherId: activeCourse.teacher_id,
+          slots: [
+            {
+              id: selectedSlot.availabilityId,
+              start: selectedSlot.start,
+              end: selectedSlot.end,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Could not schedule class.");
+      }
+
+      if (selectedSlot?.date) {
+        const parsed = new Date(`${selectedSlot.date}T00:00:00`);
+        if (!Number.isNaN(parsed.getTime())) {
+          setSelectedDay(parsed.getDate());
+        }
+      }
+
+      closeScheduleModal();
+      setRefreshKey((current) => current + 1);
+    } catch (error) {
+      setAvailabilityError(error instanceof Error ? error.message : "Could not schedule class.");
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isScheduleModalOpen) {
+      loadAvailabilitySlots();
+    }
+  }, [activeCourse, apiBaseUrl, canScheduleClass, isScheduleModalOpen]);
+
   return (
     <div className="student-dashboard-page">
       <section className="student-dashboard-hero">
@@ -327,14 +689,20 @@ export default function StudentDashboard() {
               <h2>Classes & Calendar</h2>
               <p>{isUnrolledStudent ? "You will see your schedule here after enrolling in a course." : "Track your classes in your current course."}</p>
             </div>
-
-            <div className="student-view-toggle" role="group" aria-label="Toggle schedule view">
-              <button type="button" className={`student-view-toggle-button ${viewMode === "calendar" ? "is-active" : ""}`} onClick={() => setViewMode("calendar")}>
-                Calendar View
-              </button>
-              <button type="button" className={`student-view-toggle-button ${viewMode === "list" ? "is-active" : ""}`} onClick={() => setViewMode("list")}>
-                List View
-              </button>
+            <div className="student-dashboard-actions">
+              {canScheduleClass ? (
+                <button type="button" className="student-schedule-button" onClick={openScheduleModal}>
+                  Schedule Class
+                </button>
+              ) : null}
+              <div className="student-view-toggle" role="group" aria-label="Toggle schedule view">
+                <button type="button" className={`student-view-toggle-button ${viewMode === "calendar" ? "is-active" : ""}`} onClick={() => setViewMode("calendar")}>
+                  Calendar View
+                </button>
+                <button type="button" className={`student-view-toggle-button ${viewMode === "list" ? "is-active" : ""}`} onClick={() => setViewMode("list")}>
+                  List View
+                </button>
+              </div>
             </div>
           </div>
 
@@ -419,6 +787,101 @@ export default function StudentDashboard() {
           </ul>
         </aside>
       </section>
+
+      {isScheduleModalOpen ? (
+        <div className="student-modal-backdrop" role="presentation" onClick={closeScheduleModal}>
+          <div className="student-modal" role="dialog" aria-modal="true" aria-label="Schedule class" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="student-modal-close" onClick={closeScheduleModal} aria-label="Close modal">
+              <span aria-hidden="true">X</span>
+            </button>
+            <h3>Schedule a class</h3>
+            <p>Select a date and time that your teacher is available.</p>
+
+            {availabilityError ? <p className="student-modal-error">{availabilityError}</p> : null}
+
+            <div className="student-schedule-layout">
+              <div className="student-schedule-calendar">
+                <div className="student-schedule-calendar-header">
+                  <button type="button" onClick={() => handleScheduleMonthNav(-1)} aria-label="Previous month">
+                    &lt;
+                  </button>
+                  <strong>{scheduleMonthLabel}</strong>
+                  <button type="button" onClick={() => handleScheduleMonthNav(1)} aria-label="Next month">
+                    &gt;
+                  </button>
+                </div>
+                <div className="student-calendar-weekdays">
+                  <span>Sun</span>
+                  <span>Mon</span>
+                  <span>Tue</span>
+                  <span>Wed</span>
+                  <span>Thu</span>
+                  <span>Fri</span>
+                  <span>Sat</span>
+                </div>
+                <div className="student-calendar-grid">
+                  {scheduleMonthGrid.map((day, index) => {
+                    const isoDate = day ? buildIsoDateFromDate(new Date(scheduleMonth.getFullYear(), scheduleMonth.getMonth(), day)) : "";
+                    const hasSlots = Boolean(day && availabilityByDate[isoDate]);
+                    const isSelected = isoDate && isoDate === selectedAvailabilityDate;
+
+                    return (
+                      <button
+                        type="button"
+                        className={`student-calendar-day ${day ? "" : "is-empty"} ${hasSlots ? "has-events" : ""} ${isSelected ? "is-selected" : ""}`}
+                        key={`${day || "empty"}-${index}`}
+                        disabled={!day || !hasSlots}
+                        onClick={() => {
+                          if (!isoDate) {
+                            return;
+                          }
+                          setSelectedAvailabilityDate(isoDate);
+                          setSelectedSlotKey("");
+                        }}
+                      >
+                        {day}
+                        {hasSlots ? <span className="student-calendar-day-dot" aria-hidden="true" /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="student-schedule-times">
+                <h4>{selectedAvailabilityDate ? `Times on ${formatReadableDate(selectedAvailabilityDate)}` : "Select a day"}</h4>
+                {availabilityLoading ? <p className="student-modal-note">Loading available times...</p> : null}
+                {!availabilityLoading && selectedAvailabilityDate && selectedDateSlots.length === 0 ? (
+                  <p className="student-modal-note">No available times on this day.</p>
+                ) : null}
+                <div className="student-time-slot-grid">
+                  {selectedDateSlots
+                    .slice()
+                    .sort((a, b) => String(a?.start || "").localeCompare(String(b?.start || "")))
+                    .map((slot) => (
+                      <button
+                        key={slot.key}
+                        type="button"
+                        className={`student-time-slot ${selectedSlotKey === slot.key ? "is-selected" : ""}`}
+                        onClick={() => setSelectedSlotKey(slot.key)}
+                      >
+                        {normalizeTimeLabel(slot.start)} - {normalizeTimeLabel(slot.end)}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="student-modal-actions">
+              <button type="button" className="student-modal-cancel" onClick={closeScheduleModal} disabled={isBooking}>
+                Cancel
+              </button>
+              <button type="button" className="student-modal-confirm" onClick={handleBookingConfirm} disabled={isBooking || !selectedSlot}>
+                {isBooking ? "Scheduling..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

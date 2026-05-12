@@ -79,6 +79,8 @@ class User(Base):
     email_verified_at = Column(DateTime)
     role = Column(Enum(UserRole))
     is_active = Column(Boolean, default=True)
+    terms_accepted = Column(Boolean, default=False)
+    terms_accepted_at = Column(DateTime)
     street = Column(String)
     city = Column(String)
     postal_code = Column(String)

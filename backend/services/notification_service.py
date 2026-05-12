@@ -1,11 +1,12 @@
 from Services.notification_type import NotificationType
-from Services.email_template import (
-    registration_email,
-    enrollment_email,
-    waitlist_email,
-    payment_email,
+from Services.email_templates import (
     activity_email,
-    verification_email
+    email_verification,
+    enrollment_email,
+    payment_email,
+    registration_email,
+    waitlist_email,
+    verification_email,
 )
 from Services.email_service import send_email
 

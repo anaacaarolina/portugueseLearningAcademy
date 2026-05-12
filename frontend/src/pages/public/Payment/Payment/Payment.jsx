@@ -5,6 +5,7 @@ import Select from "react-select";
 import countryList from "react-select-country-list";
 import { CreditCard } from "lucide-react";
 import { FaPaypal } from "react-icons/fa";
+import { getStoredAccessToken } from "../../../../utils/auth";
 
 const euroFormatter = new Intl.NumberFormat("en-IE", {
   style: "currency",
@@ -46,6 +47,7 @@ function getClassTypeLabel(type) {
 }
 
 export default function Payment() {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
   const location = useLocation();
   const checkoutState = location.state || {};
   const selectedCourse = checkoutState.selectedCourse || null;
@@ -53,7 +55,6 @@ export default function Payment() {
   const selectedHourPackage = checkoutState.selectedHourPackage || null;
   const countryOptions = useMemo(() => countryList().getData(), []);
 
-  const [paymentMethod, setPaymentMethod] = useState("card");
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [billingData, setBillingData] = useState({
     fullName: "",
@@ -63,16 +64,11 @@ export default function Payment() {
     city: "",
     postalCode: "",
   });
-  const [cardData, setCardData] = useState({
-    cardholderName: "",
-    cardNumber: "",
-    expiryDate: "",
-    cvv: "",
-  });
+ 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const subtotal = Number(selectedHourPackage?.price) || 0;
-  const tax = subtotal * 0.23;
-  const total = subtotal + tax;
+  const total = Number(selectedHourPackage?.price) || 0;
 
   const handleBillingChange = (event) => {
     const { name, value } = event.target;
@@ -82,12 +78,80 @@ export default function Payment() {
     }));
   };
 
-  const handleCardChange = (event) => {
-    const { name, value } = event.target;
-    setCardData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+ 
+
+  const getAuthenticatedUserId = async () => {
+    const token = getStoredAccessToken();
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const profile = await response.json();
+      const id = Number(profile?.id);
+      return Number.isFinite(id) ? id : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleCompletePurchase = async () => {
+    if (!selectedHourPackage?.id) {
+      setErrorMessage("Please select an hour package before continuing.");
+      return;
+    }
+
+    if (!selectedCourse?.id) {
+      setErrorMessage("Please select a course before continuing.");
+      return;
+    }
+
+   
+
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const userId = await getAuthenticatedUserId();
+      const response = await fetch(`${apiBaseUrl}/api/stripe/create-checkout-session`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          package_id: selectedHourPackage.id,
+          course_id: selectedCourse.id,
+          user_id: userId,
+          email: billingData.email || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const detail = typeof errorData?.detail === "string" ? errorData.detail : "Failed to initiate checkout.";
+        throw new Error(detail);
+      }
+
+      const data = await response.json();
+      if (!data?.url) {
+        throw new Error("Stripe did not return a checkout URL.");
+      }
+
+      window.location.assign(data.url);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to initiate checkout.");
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -98,30 +162,6 @@ export default function Payment() {
 
       <div className="payment-layout">
         <div className="payment-left-column">
-          <section className="payment-panel">
-            <h2>Payment Method</h2>
-            <div className="payment-method-grid">
-              <button type="button" className={`payment-method-card ${paymentMethod === "card" ? "is-selected" : ""}`} onClick={() => setPaymentMethod("card")} aria-pressed={paymentMethod === "card"}>
-                <div className="payment-method-icon-title-text">
-                  <CreditCard className="payment-method-icon" />
-                  <div className="payment-method-title-text">
-                    <span className="payment-method-title">Credit / Debit Card</span>
-                    <span className="payment-method-text">Visa, MasterCard, Amex</span>
-                  </div>
-                </div>
-              </button>
-
-              <button type="button" className={`payment-method-card ${paymentMethod === "paypal" ? "is-selected" : ""}`} onClick={() => setPaymentMethod("paypal")} aria-pressed={paymentMethod === "paypal"}>
-                <div className="payment-method-icon-title-text">
-                  <FaPaypal className="payment-method-icon" />{" "}
-                  <div className="payment-method-title-text">
-                    <span className="payment-method-title">PayPal</span>
-                    <span className="payment-method-text">Fast & Secure.</span>{" "}
-                  </div>
-                </div>
-              </button>
-            </div>
-          </section>
 
           <section className="payment-panel">
             <h2>Billing Information</h2>
@@ -165,34 +205,7 @@ export default function Payment() {
             </form>
           </section>
 
-          {paymentMethod === "card" ? (
-            <section className="payment-panel">
-              <h2>Card Details</h2>
-              <form className="payment-form" onSubmit={(event) => event.preventDefault()}>
-                <label>
-                  Cardholder Name
-                  <input type="text" name="cardholderName" value={cardData.cardholderName} onChange={handleCardChange} placeholder="Name on Card" aria-label="Cardholder Name" />
-                </label>
-
-                <label>
-                  Card Number
-                  <input type="text" name="cardNumber" value={cardData.cardNumber} onChange={handleCardChange} placeholder="1234 5678 9012 3456" aria-label="Card Number" />
-                </label>
-
-                <div className="payment-form-row">
-                  <label>
-                    Expiry Date
-                    <input type="month" name="expiryDate" value={cardData.expiryDate} onChange={handleCardChange} aria-label="Expiry Date" />
-                  </label>
-
-                  <label>
-                    CVV
-                    <input type="password" name="cvv" value={cardData.cvv} onChange={handleCardChange} placeholder="123" maxLength={4} aria-label="CVV" />
-                  </label>
-                </div>
-              </form>
-            </section>
-          ) : null}
+        
         </div>
 
         <aside className="payment-summary">
@@ -212,33 +225,16 @@ export default function Payment() {
             <p className="payment-summary-item-field">Hour Package</p>
             <p className="payment-summary-item-option">{selectedHourPackage ? `${formatHours(selectedHourPackage.hours)} Hours` : "Not selected"}</p>
           </div>
-
-          <div className="payment-summary-item">
-            <p className="payment-summary-item-field">Price</p>
-            <p className="payment-summary-item-option">{formatCurrency(subtotal)}</p>
-          </div>
-
           <hr />
-
-          <div className="payment-total-row">
-            <span>Subtotal</span>
-            <strong>{formatCurrency(subtotal)}</strong>
-          </div>
-
-          <div className="payment-total-row">
-            <span>Tax (23%)</span>
-            <strong>{formatCurrency(tax)}</strong>
-          </div>
-
-          <hr />
-
           <div className="payment-total-row payment-grand-total">
             <span>Total</span>
             <strong>{formatCurrency(total)}</strong>
           </div>
 
-          <button type="button" className="payment-complete-button">
-            Complete Purchase
+          {errorMessage ? <p className="payment-error-message">{errorMessage}</p> : null}
+
+          <button type="button" className="payment-complete-button" onClick={handleCompletePurchase} disabled={isSubmitting || !selectedHourPackage || !selectedCourse}>
+            {isSubmitting ? "Redirecting to Stripe..." : "Complete Purchase"}
           </button>
         </aside>
       </div>

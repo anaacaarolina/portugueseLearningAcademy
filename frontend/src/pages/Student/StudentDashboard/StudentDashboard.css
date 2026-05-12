@@ -42,6 +42,30 @@
   margin-bottom: 1rem;
 }
 
+.student-dashboard-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.student-schedule-button {
+  border: none;
+  border-radius: 999px;
+  background-color: var(--yellow);
+  color: var(--dark-blue);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.95rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.student-schedule-button:hover {
+  filter: brightness(0.95);
+}
+
 .student-dashboard-main-card-header h2,
 .student-stats-card h2 {
   margin: 0;
@@ -277,6 +301,143 @@
   font-size: 0.95rem;
 }
 
+.student-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 24, 48, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+
+.student-modal {
+  background-color: white;
+  border-radius: var(--corner-radius);
+  padding: 1.2rem;
+  width: min(900px, 96vw);
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+.student-modal h3 {
+  margin: 0 0 0.35rem;
+  color: var(--dark-blue);
+  font-family: "Roboto Slab", serif;
+}
+
+.student-modal p {
+  margin: 0 0 0.75rem;
+  color: var(--text-color);
+}
+
+.student-modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--dark-blue);
+  cursor: pointer;
+}
+
+.student-modal-error {
+  color: #b83232;
+  font-weight: 600;
+}
+
+.student-modal-note {
+  font-size: 0.85rem;
+  color: var(--text-color);
+}
+
+.student-schedule-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.student-schedule-calendar {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background-color: var(--off-white);
+}
+
+.student-schedule-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.student-schedule-calendar-header button {
+  border: none;
+  background: white;
+  border-radius: 999px;
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.student-schedule-times h4 {
+  margin: 0 0 0.6rem;
+  color: var(--dark-blue);
+}
+
+.student-time-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.5rem;
+}
+
+.student-time-slot {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: white;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: var(--dark-blue);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.student-time-slot.is-selected {
+  border-color: var(--yellow);
+  box-shadow: inset 0 0 0 1px var(--yellow);
+}
+
+.student-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.student-modal-cancel,
+.student-modal-confirm {
+  border: none;
+  border-radius: 999px;
+  padding: 0.5rem 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.student-modal-cancel {
+  background: var(--off-white);
+  color: var(--dark-blue);
+}
+
+.student-modal-confirm {
+  background: var(--dark-blue);
+  color: white;
+}
+
 @media (min-width: 1100px) {
   .student-dashboard-content {
     grid-template-columns: 2fr 1fr;
@@ -284,6 +445,11 @@
   }
 
   .student-calendar-view {
+    grid-template-columns: 1.1fr 1fr;
+    align-items: start;
+  }
+
+  .student-schedule-layout {
     grid-template-columns: 1.1fr 1fr;
     align-items: start;
   }
